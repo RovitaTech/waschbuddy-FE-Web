@@ -6,9 +6,10 @@ const nextConfig: NextConfig = {
     // Add any experimental features here
   },
   
-  // Images configuration
+  // Images configuration for GitHub Pages
   images: {
     domains: [],
+    unoptimized: true, // Required for static export
   },
   
   // Environment variables
@@ -16,8 +17,11 @@ const nextConfig: NextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   
-  // For production builds
-  output: 'standalone',
+  // For GitHub Pages deployment
+  output: 'export',
+  trailingSlash: true,
+  basePath: process.env.NODE_ENV === 'production' ? '/wasch_bar_FE_Web' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/wasch_bar_FE_Web' : '',
 };
 
 export default nextConfig;

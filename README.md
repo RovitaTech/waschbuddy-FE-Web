@@ -13,7 +13,34 @@ Modern admin panel for WASCHBÄR laundry management system built with Next.js, T
 - **TypeScript** - Full type safety
 - **Modern UI** - Built with shadcn/ui components
 
-## 🛠️ Tech Stack
+## � Deployment
+
+The application is configured for automatic deployment to GitHub Pages:
+
+- **Automatic Deployment:** Every push to the `main` branch triggers a GitHub Actions workflow
+- **Static Export:** Next.js generates a static site optimized for GitHub Pages
+- **Base Path:** Configured for GitHub repository hosting with proper asset paths
+- **Live URL:** [https://rovitatech.github.io/wasch_bar_FE_Web/](https://rovitatech.github.io/wasch_bar_FE_Web/)
+
+### Manual Deployment
+
+To manually deploy to GitHub Pages:
+
+```bash
+npm run build
+npm run export
+```
+
+### Local Production Build
+
+To test the production build locally:
+
+```bash
+npm run build
+npm run start
+```
+
+## 🐳 Docker Support
 
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
@@ -29,6 +56,11 @@ Modern admin panel for WASCHBÄR laundry management system built with Next.js, T
 Email: admin@waschbar.com
 Password: admin123
 ```
+
+## 🌐 Live Demo
+
+The application is automatically deployed to GitHub Pages on every push to main:
+**[https://rovitatech.github.io/wasch_bar_FE_Web/](https://rovitatech.github.io/wasch_bar_FE_Web/)**
 
 ## 🚀 Getting Started
 

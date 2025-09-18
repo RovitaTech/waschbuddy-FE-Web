@@ -1,24 +1,23 @@
-name: Deploy to Production
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-        - staging
-        - production
 
 jobs:
-  build:
-    name: Build for Deployment
+  build-and-deploy:
+    name: Build and Deploy to GitHub Pages
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - name: Checkout code
@@ -33,120 +32,28 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Run tests
-      run: npm run type-check && npm run lint
+    - name: Run tests and linting
+      run: |
+        npm run type-check
+        npm run lint
       
-    - name: Build application
-      run: npm run build:prod
+    - name: Build application for GitHub Pages
+      run: npm run build
       env:
         NODE_ENV: production
-        NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
+        NEXT_PUBLIC_API_URL: https://api.waschbaer.com
         NEXT_PUBLIC_APP_NAME: "WASCHBÄR Admin Panel"
         
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
       with:
-        name: production-build
-        path: |
-          .next/
-          public/
-          package.json
-          next.config.ts
-        retention-days: 30
-
-  docker:
-    name: Build & Push Docker Image
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
+        static_site_generator: next
+        
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+        path: ./out
         
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ secrets.DOCKER_REPOSITORY }}/waschbaer-frontend
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build, docker]
-    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
-    environment: staging
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: production-build
-        
-    - name: Deploy to Staging
-      run: |
-        echo "Deploying to staging environment..."
-        # Add your staging deployment commands here
-        # Examples:
-        # - Deploy to Vercel staging
-        # - Deploy to AWS S3 + CloudFront
-        # - Deploy to staging server via SSH
-        
-    - name: Run health check
-      run: |
-        echo "Running health check on staging..."
-        # Add health check commands
-        
-    - name: Notify deployment
-      run: |
-        echo "Staging deployment completed successfully"
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build, docker, deploy-staging]
-    if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'production'
-    environment: production
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: production-build
-        
-    - name: Deploy to Production
-      run: |
-        echo "Deploying to production environment..."
-        # Add your production deployment commands here
-        
-    - name: Run health check
-      run: |
-        echo "Running health check on production..."
-        
-    - name: Notify deployment
-      run: |
-        echo "Production deployment completed successfully"
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
