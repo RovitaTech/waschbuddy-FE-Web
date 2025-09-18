@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Environment files
+.env.local
+.env*.local
+
+# Environment secrets (never commit production secrets)
+.env.production.local
+.env.staging.local
+.env.integration.local
+
+# Deployment logs
+deploy.log
+
+# Docker
+docker-compose.override.yml

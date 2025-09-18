@@ -1,0 +1,508 @@
+import { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Switch } from './ui/switch';
+import { 
+  WashingMachine, 
+  Users, 
+  Clock, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  MessageSquare,
+  UserCheck,
+  Settings,
+  LogOut,
+  Plus,
+  Search,
+  Filter,
+  Bell,
+  Moon,
+  Sun,
+  MapPin,
+  Building,
+  BarChart3
+} from 'lucide-react';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { MachineManagement } from './MachineManagement';
+import { UserManagement } from './UserManagement';
+import { ReservationManagement } from './ReservationManagement';
+import { ProfileRequestsManagement } from './ProfileRequestsManagement';
+import { UserQueriesManagement } from './UserQueriesManagement';
+import { AdminSettings } from './AdminSettings';
+import { LocationSwitcher } from './LocationSwitcher';
+import { MachineDetail } from './MachineDetail';
+import { NotificationsPanel } from './NotificationsPanel';
+import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from './utils/mockData';
+import { toast } from 'sonner';
+
+interface AdminDashboardProps {
+  onLogout: () => void;
+  location: { city: string; dorm: string | 'all' };
+  onLocationChange: (location: { city: string; dorm: string | 'all' }) => void;
+  onBackToLocationSelect: () => void;
+}
+
+export function AdminDashboard({ onLogout, location, onLocationChange, onBackToLocationSelect }: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+  const [machineAccessType, setMachineAccessType] = useState<'dashboard' | 'machines'>('dashboard');
+  const [stats, setStats] = useState(getLocationStats(location));
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle('dark');
+  };
+
+  // Update stats when location changes
+  useEffect(() => {
+    const newStats = getLocationStats(location);
+    setStats(newStats);
+  }, [location.city, location.dorm]); // More specific dependencies
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    setSelectedMachineId(null); // Reset machine selection when changing tabs
+  };
+
+  const handleMachineClick = (machineId: string, accessType: 'dashboard' | 'machines' = 'dashboard') => {
+    setSelectedMachineId(machineId);
+    setMachineAccessType(accessType);
+  };
+
+  const handleBackFromMachine = () => {
+    setSelectedMachineId(null);
+  };
+
+  const handleStatsNavigation = (type: 'machines' | 'users', filter?: string) => {
+    if (type === 'machines') {
+      setActiveTab('machines');
+      // In a real app, you'd pass the filter to the MachineManagement component
+    } else if (type === 'users') {
+      setActiveTab('users');
+    }
+  };
+
+  const handleUserApproval = (userId: string, approved: boolean) => {
+    // In a real app, this would call an API
+    toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
+  };
+
+  const unreadNotifications = mockNotifications.filter(n => !n.read).length;
+
+  // Get machines with issues for the current location
+  const machinesWithIssues = filterDataByLocation(mockMachines, location).filter(m => m.status === 'maintenance');
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="hidden sm:block">
+              <h1 className="text-lg md:text-xl">WASCHBÄR ADMIN</h1>
+            </div>
+            <div className="sm:hidden">
+              <h1 className="text-base">WASCHBÄR</h1>
+            </div>
+            <div className="hidden md:block">
+              <LocationSwitcher
+                currentLocation={location}
+                onLocationChange={onLocationChange}
+                onBackToLocationSelect={onBackToLocationSelect}
+              />
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="hidden sm:flex items-center space-x-2">
+              <Sun className="h-4 w-4" />
+              <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
+              <Moon className="h-4 w-4" />
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowNotifications(true)}>
+              <Bell className="h-4 w-4" />
+              {unreadNotifications > 0 && (
+                <Badge variant="destructive" className="ml-1 text-xs">{unreadNotifications}</Badge>
+              )}
+            </Button>
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="/api/placeholder/32/32" />
+              <AvatarFallback>AD</AvatarFallback>
+            </Avatar>
+            <Button variant="outline" size="sm" onClick={onLogout} className="hidden sm:flex">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+            <Button variant="outline" size="sm" onClick={onLogout} className="sm:hidden">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Navigation */}
+      <div className="md:hidden border-b bg-card">
+        <div className="p-3">
+          <div className="grid grid-cols-7 gap-1">
+            <button
+              onClick={() => handleTabChange('overview')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'overview'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4 mb-1" />
+              <span>Overview</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('machines')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'machines'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <WashingMachine className="h-4 w-4 mb-1" />
+              <span>Machines</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('users')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'users'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <Users className="h-4 w-4 mb-1" />
+              <span>Users</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('reservations')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'reservations'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <Clock className="h-4 w-4 mb-1" />
+              <span>Bookings</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('profile-requests')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'profile-requests'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <UserCheck className="h-4 w-4 mb-1" />
+              <span>Requests</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('queries')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'queries'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <MessageSquare className="h-4 w-4 mb-1" />
+              <span>Queries</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('settings')}
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+                activeTab === 'settings'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+            >
+              <Settings className="h-4 w-4 mb-1" />
+              <span>Settings</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Location Switcher and Controls */}
+      <div className="md:hidden p-4 border-b bg-card space-y-4">
+        <LocationSwitcher
+          currentLocation={location}
+          onLocationChange={onLocationChange}
+          onBackToLocationSelect={onBackToLocationSelect}
+        />
+        
+        {/* Mobile Dark Mode Toggle */}
+        <div className="flex items-center justify-center space-x-2 sm:hidden">
+          <Sun className="h-4 w-4" />
+          <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
+          <Moon className="h-4 w-4" />
+        </div>
+      </div>
+
+      <div className="md:flex">
+        {/* Desktop Sidebar Navigation */}
+        <nav className="w-64 bg-card border-r min-h-[calc(100vh-4rem)] hidden md:block">
+          <div className="p-4">
+            <Tabs value={activeTab} onValueChange={handleTabChange} orientation="vertical" className="w-full">
+              <TabsList className="grid w-full grid-cols-1 h-auto gap-2 bg-transparent">
+                <TabsTrigger 
+                  value="overview" 
+                  className={`justify-start w-full ${activeTab === 'overview' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="machines" 
+                  className={`justify-start w-full ${activeTab === 'machines' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <WashingMachine className="h-4 w-4 mr-2" />
+                  Machines
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="users" 
+                  className={`justify-start w-full ${activeTab === 'users' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Users
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="reservations" 
+                  className={`justify-start w-full ${activeTab === 'reservations' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Reservations
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="profile-requests" 
+                  className={`justify-start w-full ${activeTab === 'profile-requests' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Profile Requests
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="queries" 
+                  className={`justify-start w-full ${activeTab === 'queries' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  User Queries
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="settings" 
+                  className={`justify-start w-full ${activeTab === 'settings' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto md:min-h-[calc(100vh-4rem)]">
+
+          <div className="p-4 md:p-6">
+            {selectedMachineId ? (
+              <MachineDetail
+                machineId={selectedMachineId}
+                location={location}
+                onBack={handleBackFromMachine}
+                accessType={machineAccessType}
+              />
+            ) : (
+              <Tabs value={activeTab} className="space-y-6">
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+              <div>
+                <h2 className="text-2xl mb-6">Dashboard Overview</h2>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsNavigation('machines')}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm">Total Machines</CardTitle>
+                      <WashingMachine className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl">{stats.totalMachines}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.activeMachines} active
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsNavigation('machines', 'in_use')}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm">In Use</CardTitle>
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl">{stats.inUseMachines}</div>
+                      <p className="text-xs text-muted-foreground">
+                        Currently running
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsNavigation('machines', 'maintenance')}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm">Maintenance</CardTitle>
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl">{stats.maintenanceRequired}</div>
+                      <p className="text-xs text-muted-foreground">
+                        Require attention
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsNavigation('users')}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm">Total Users</CardTitle>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl">{stats.totalUsers}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.pendingVerifications} pending verification
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Machine Issues</CardTitle>
+                      <CardDescription>Machines requiring attention</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {machinesWithIssues.slice(0, 2).map((machine) => (
+                          <div 
+                            key={machine.id}
+                            className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg cursor-pointer hover:bg-destructive/20 transition-colors"
+                            onClick={() => handleMachineClick(machine.id, 'dashboard')}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <AlertTriangle className="h-4 w-4 text-destructive" />
+                              <div>
+                                <p className="text-sm">Machine {machine.id}</p>
+                                <p className="text-xs text-muted-foreground">{machine.issue}</p>
+                              </div>
+                            </div>
+                            <Badge variant="destructive">Critical</Badge>
+                          </div>
+                        ))}
+                        {machinesWithIssues.length === 0 && (
+                          <p className="text-muted-foreground text-center py-4">No machine issues</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Pending Verifications</CardTitle>
+                      <CardDescription>New user accounts awaiting approval</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {filterDataByLocation(mockUsers, location)
+                          .filter(user => user.status === 'pending')
+                          .slice(0, 3)
+                          .map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback>
+                                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="text-sm">{user.name}</p>
+                                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleUserApproval(user.id, true)}
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleUserApproval(user.id, false)}
+                                >
+                                  <XCircle className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Machine Management Tab */}
+            <TabsContent value="machines">
+              <MachineManagement 
+                location={location} 
+                onMachineClick={(machineId) => handleMachineClick(machineId, 'machines')}
+              />
+            </TabsContent>
+
+            {/* User Management Tab */}
+            <TabsContent value="users">
+              <UserManagement location={location} />
+            </TabsContent>
+
+            {/* Reservations Tab */}
+            <TabsContent value="reservations">
+              <ReservationManagement location={location} />
+            </TabsContent>
+
+            {/* Profile Requests Tab */}
+            <TabsContent value="profile-requests">
+              <ProfileRequestsManagement location={location} />
+            </TabsContent>
+
+            {/* User Queries Tab */}
+            <TabsContent value="queries">
+              <UserQueriesManagement location={location} />
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings">
+              <AdminSettings location={location} />
+            </TabsContent>
+            </Tabs>
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* Notifications Panel */}
+      <NotificationsPanel 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
+    </div>
+  );
+}
