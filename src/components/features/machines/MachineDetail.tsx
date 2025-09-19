@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Label } from './ui/label';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Input } from '../../ui/input';
+import { Textarea } from '../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Label } from '../../ui/label';
 import { 
   ArrowLeft, 
   WashingMachine, 
@@ -18,7 +18,8 @@ import {
   User,
   Activity
 } from 'lucide-react';
-import { Machine, mockMachines, mockReservations, filterDataByLocation } from './utils/mockData';
+import { mockMachines, mockReservations, filterDataByLocation } from '../../../utils/mockData';
+import { Machine } from '@/types';
 
 interface MachineDetailProps {
   machineId: string;

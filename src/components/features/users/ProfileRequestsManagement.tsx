@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { Textarea } from './ui/textarea';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Input } from '../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog';
+import { Textarea } from '../../ui/textarea';
 import { toast } from 'sonner';
-import { maskPhoneNumber } from './utils/privacy';
+import { maskPhoneNumber } from '../../../utils/privacy';
 import { 
   Search, 
   Filter, 

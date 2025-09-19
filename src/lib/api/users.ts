@@ -1,7 +1,8 @@
 // Users API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockUsers, User } from '@/components/utils/mockData';
+import { mockUsers } from '@/utils/mockData';
+import { User } from '@/types';
 
 export interface UserFilters {
   search?: string;

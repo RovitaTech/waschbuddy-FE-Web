@@ -1,32 +1,36 @@
 "use client";
 
 import { useState } from 'react';
-import { AdminLogin } from '@/components/AdminLogin';
-import { AdminDashboard } from '@/components/AdminDashboard';
-import { LocationSelector } from '@/components/LocationSelector';
+import { AdminLogin } from '@/components/features/auth/AdminLogin';
+import { AdminDashboard } from '@/components/features/admin/AdminDashboard';
+import { LocationSelector } from '@/components/layout/LocationSelector';
+import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from '@/hooks/useLocation';
+import { Location } from '@/types';
 
 type AppState = 'login' | 'location' | 'dashboard';
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('login');
-  const [selectedLocation, setSelectedLocation] = useState<{ city: string; dorm: string | 'all' } | null>(null);
+  const { login, logout, isAuthenticated } = useAuth();
+  const { selectedLocation, selectLocation, clearLocation } = useLocation();
 
-  const handleLogin = (credentials: { email: string; password: string }) => {
-    // Simple demo authentication - in real app, this would validate against a backend
-    if (credentials.email === 'admin@waschbar.com' && credentials.password === 'admin123') {
+  const handleLogin = async (credentials: { email: string; password: string }) => {
+    const success = await login(credentials);
+    if (success) {
       setAppState('location');
     } else {
       alert('Invalid credentials. Please use admin@waschbar.com / admin123');
     }
   };
 
-  const handleLocationSelect = (location: { city: string; dorm: string | 'all' }) => {
-    setSelectedLocation(location);
+  const handleLocationSelect = (location: Location) => {
+    selectLocation(location);
     setAppState('dashboard');
   };
 
-  const handleLocationChange = (location: { city: string; dorm: string | 'all' }) => {
-    setSelectedLocation(location);
+  const handleLocationChange = (location: Location) => {
+    selectLocation(location);
   };
 
   const handleBackToLocationSelect = () => {
@@ -34,8 +38,9 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    logout();
+    clearLocation();
     setAppState('login');
-    setSelectedLocation(null);
   };
 
   return (

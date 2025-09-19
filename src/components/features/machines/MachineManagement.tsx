@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Label } from './ui/label';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Input } from '../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
+import { Label } from '../../ui/label';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../ui/alert-dialog';
 import { 
   WashingMachine, 
   Plus, 
@@ -20,7 +20,9 @@ import {
   Power,
   Settings
 } from 'lucide-react';
-import { filterDataByLocation, mockMachines, Machine, CITIES_AND_DORMS } from './utils/mockData';
+import { filterDataByLocation, mockMachines } from '../../../utils/mockData';
+import { Machine } from '@/types';
+import { CITIES_AND_DORMS } from '@/constants';
 import { toast } from 'sonner';
 
 interface MachineManagementProps {

@@ -1,7 +1,7 @@
 // Reservations API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockReservations } from '@/components/utils/mockData';
+import { mockReservations } from '@/utils/mockData';
 
 export interface ReservationFilters {
   location?: { city: string; dorm: string | 'all' };

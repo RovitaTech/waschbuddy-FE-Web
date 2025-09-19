@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Switch } from './ui/switch';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import { Switch } from '../../ui/switch';
 import { 
   WashingMachine, 
   Users, 
@@ -26,18 +26,18 @@ import {
   Building,
   BarChart3
 } from 'lucide-react';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { MachineManagement } from './MachineManagement';
-import { UserManagement } from './UserManagement';
-import { ReservationManagement } from './ReservationManagement';
-import { ProfileRequestsManagement } from './ProfileRequestsManagement';
-import { UserQueriesManagement } from './UserQueriesManagement';
+import { Input } from '../../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { MachineManagement } from '../machines/MachineManagement';
+import { UserManagement } from '../users/UserManagement';
+import { ReservationManagement } from '../reservations/ReservationManagement';
+import { ProfileRequestsManagement } from '../users/ProfileRequestsManagement';
+import { UserQueriesManagement } from '../users/UserQueriesManagement';
 import { AdminSettings } from './AdminSettings';
-import { LocationSwitcher } from './LocationSwitcher';
-import { MachineDetail } from './MachineDetail';
-import { NotificationsPanel } from './NotificationsPanel';
-import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from './utils/mockData';
+import { LocationSwitcher } from '../../layout/LocationSwitcher';
+import { MachineDetail } from '../machines/MachineDetail';
+import { NotificationsPanel } from '../../layout/NotificationsPanel';
+import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from '../../../utils/mockData';
 import { toast } from 'sonner';
 
 interface AdminDashboardProps {
@@ -152,10 +152,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
           <div className="grid grid-cols-7 gap-1">
             <button
               onClick={() => handleTabChange('overview')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'overview'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <BarChart3 className="h-4 w-4 mb-1" />
@@ -163,10 +163,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             </button>
             <button
               onClick={() => handleTabChange('machines')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'machines'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <WashingMachine className="h-4 w-4 mb-1" />
@@ -174,10 +174,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             </button>
             <button
               onClick={() => handleTabChange('users')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'users'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <Users className="h-4 w-4 mb-1" />
@@ -185,10 +185,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             </button>
             <button
               onClick={() => handleTabChange('reservations')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'reservations'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <Clock className="h-4 w-4 mb-1" />
@@ -196,10 +196,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             </button>
             <button
               onClick={() => handleTabChange('profile-requests')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'profile-requests'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <UserCheck className="h-4 w-4 mb-1" />
@@ -207,10 +207,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             </button>
             <button
               onClick={() => handleTabChange('queries')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'queries'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <MessageSquare className="h-4 w-4 mb-1" />
@@ -218,10 +218,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             </button>
             <button
               onClick={() => handleTabChange('settings')}
-              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 text-xs rounded-md transition-colors text-foreground relative ${
                 activeTab === 'settings'
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-foreground shadow-sm border-b-2 border-primary/50'
+                  : 'hover:bg-accent/50 hover:text-foreground'
               }`}
             >
               <Settings className="h-4 w-4 mb-1" />
@@ -255,49 +255,49 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
               <TabsList className="grid w-full grid-cols-1 h-auto gap-2 bg-transparent">
                 <TabsTrigger 
                   value="overview" 
-                  className={`justify-start w-full ${activeTab === 'overview' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'overview' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Overview
                 </TabsTrigger>
                 <TabsTrigger 
                   value="machines" 
-                  className={`justify-start w-full ${activeTab === 'machines' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'machines' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <WashingMachine className="h-4 w-4 mr-2" />
                   Machines
                 </TabsTrigger>
                 <TabsTrigger 
                   value="users" 
-                  className={`justify-start w-full ${activeTab === 'users' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'users' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Users
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reservations" 
-                  className={`justify-start w-full ${activeTab === 'reservations' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'reservations' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <Clock className="h-4 w-4 mr-2" />
                   Reservations
                 </TabsTrigger>
                 <TabsTrigger 
                   value="profile-requests" 
-                  className={`justify-start w-full ${activeTab === 'profile-requests' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'profile-requests' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <UserCheck className="h-4 w-4 mr-2" />
                   Profile Requests
                 </TabsTrigger>
                 <TabsTrigger 
                   value="queries" 
-                  className={`justify-start w-full ${activeTab === 'queries' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'queries' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   User Queries
                 </TabsTrigger>
                 <TabsTrigger 
                   value="settings" 
-                  className={`justify-start w-full ${activeTab === 'settings' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                  className={`justify-start w-full text-foreground relative ${activeTab === 'settings' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
@@ -423,16 +423,16 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                           .filter(user => user.status === 'pending')
                           .slice(0, 3)
                           .map((user) => (
-                            <div key={user.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div key={user.id} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700">
                               <div className="flex items-center space-x-3">
                                 <Avatar className="h-8 w-8">
-                                  <AvatarFallback>
+                                  <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">
                                     {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <p className="text-sm">{user.name}</p>
-                                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                                  <p className="text-sm dark:text-black">{user.name}</p>
+                                  <p className="text-xs text-muted-foreground dark:text-gray-400">{user.email}</p>
                                 </div>
                               </div>
                               <div className="flex space-x-2">

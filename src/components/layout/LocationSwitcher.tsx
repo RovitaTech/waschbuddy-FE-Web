@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { Button } from './ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Badge } from '../ui/badge';
 import { MapPin, Building, ArrowLeft } from 'lucide-react';
-import { CITIES_AND_DORMS, filterDataByLocation, mockMachines, mockUsers } from './utils/mockData';
+import { filterDataByLocation, mockMachines, mockUsers } from '../../utils/mockData';
+import { CITIES_AND_DORMS } from '@/constants';
 
 interface LocationSwitcherProps {
   currentLocation: { city: string; dorm: string | 'all' };

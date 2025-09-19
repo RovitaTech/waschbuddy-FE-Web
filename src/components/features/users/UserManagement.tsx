@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-import { Label } from './ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Input } from '../../ui/input';
+import { Textarea } from '../../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../ui/alert-dialog';
+import { Label } from '../../ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { toast } from 'sonner';
-import { maskPhoneNumber } from './utils/privacy';
-import { filterDataByLocation, mockUsers, User } from './utils/mockData';
+import { maskPhoneNumber } from '../../../utils/privacy';
+import { filterDataByLocation, mockUsers } from '../../../utils/mockData';
+import { User } from '@/types';
 import { 
   Search, 
   Filter, 

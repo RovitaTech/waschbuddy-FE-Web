@@ -1,7 +1,8 @@
 // Machines API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockMachines, Machine } from '@/components/utils/mockData';
+import { mockMachines } from '@/utils/mockData';
+import { Machine } from '@/types';
 
 export interface MachineFilters {
   location?: { city: string; dorm: string | 'all' };
@@ -60,16 +61,14 @@ export async function createMachine(machineData: Partial<Machine>): Promise<Mach
   const newMachine: Machine = {
     id: `machine_${Date.now()}`,
     name: machineData.name || 'New Machine',
-    type: machineData.type || 'washing',
+    type: machineData.type || 'washer',
     status: 'available',
     location: machineData.location || '',
     city: machineData.city || '',
     dorm: machineData.dorm || '',
-    floor: machineData.floor || 1,
     lastMaintenance: new Date().toISOString(),
-    nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    cycleTime: machineData.cycleTime || 45,
-    energyRating: machineData.energyRating || 'A+++'
+    totalCycles: 0,
+    model: machineData.model || 'Unknown Model'
   };
   
   return Promise.resolve(newMachine);

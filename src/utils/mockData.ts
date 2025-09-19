@@ -1,101 +1,16 @@
 // Comprehensive mock data for the WASCHBÄR admin panel
 
-export interface Machine {
-  id: string;
-  name: string;
-  type: 'washer' | 'dryer';
-  status: 'available' | 'in_use' | 'maintenance' | 'offline';
-  location: string;
-  dorm: string;
-  city: string;
-  currentUser?: string;
-  timeRemaining?: number;
-  issue?: string;
-  lastMaintenance: string;
-  totalCycles: number;
-  model: string;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: 'active' | 'pending' | 'suspended' | 'rejected';
-  city: string;
-  dorm: string;
-  registrationDate: string;
-  lastActive: string;
-  totalReservations: number;
-  studentId: string;
-}
-
-export interface Reservation {
-  id: string;
-  userId: string;
-  userName: string;
-  machineId: string;
-  machineName: string;
-  startTime: string;
-  endTime: string;
-  status: 'active' | 'completed' | 'cancelled' | 'upcoming';
-  city: string;
-  dorm: string;
-}
-
-export interface ProfileRequest {
-  id: string;
-  userId: string;
-  userName: string;
-  email: string;
-  requestType: 'city_change' | 'dorm_change' | 'contact_update';
-  currentValue: string;
-  newValue: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: string;
-  city: string;
-  dorm: string;
-}
-
-export interface UserQuery {
-  id: string;
-  userId: string;
-  userName: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: 'open' | 'resolved' | 'in_progress';
-  priority: 'low' | 'medium' | 'high';
-  submittedAt: string;
-  resolvedAt?: string;
-  adminResponse?: string;
-  city: string;
-  dorm: string;
-}
-
-export interface Notification {
-  id: string;
-  type: 'user_verification' | 'machine_issue' | 'query_submitted' | 'system_alert';
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  priority: 'low' | 'medium' | 'high';
-}
-
-// Cities and dorms configuration
-export const CITIES_AND_DORMS = {
-  'Berlin': ['Studentenwohnheim Adlershof', 'Wohnheim Charlottenburg', 'Campus Residenz Mitte', 'Studentendorf Schlachtensee', 'Wohnanlage Friedrichshain', 'Campus Lodge Prenzlauer Berg', 'Studierendenwohnen Tempelhof', 'Residenz Kreuzberg'],
-  'Munich': ['Studentenstadt Freimann', 'Wohnheim Garching', 'Campus Lodge', 'Olympiadorf', 'Studentenwohnheim Biederstein', 'Wohnanlage Maxvorstadt', 'Residenz Schwabing', 'Campus Village Sendling'],
-  'Hamburg': ['Wohnheim Harvestehude', 'Campus Residenz Altona', 'Studentendorf Bergedorf', 'Wohnanlage St. Pauli', 'Grindel Residenz', 'HafenCity Residence', 'Eimsbüttel Campus', 'Student Village Wilhelmsburg'],
-  'Cologne': ['Wohnheim Sülz', 'Campus Residenz Deutz', 'Studentendorf Lindenthal', 'Wohnanlage Ehrenfeld', 'Südstadt Residenz', 'Dom Residenz', 'Nippes Campus Lodge', 'Chorweiler Student Housing'],
-  'Frankfurt': ['Campus Westend', 'Studentenwohnheim Bockenheim', 'Wohnanlage Sachsenhausen', 'Nordend Residenz', 'Studentendorf Niederrad', 'Ostend Campus', 'Gallus Residence', 'Fechenheim Lodge'],
-  'Stuttgart': ['Campus Vaihingen', 'Stadtmitte Residence', 'Bad Cannstatt Lodge', 'Degerloch Student Village', 'Feuerbach Campus', 'Zuffenhausen Wohnheim'],
-  'Düsseldorf': ['Altstadt Campus', 'Bilk Residence', 'Oberkassel Lodge', 'Pempelfort Student Housing', 'Flingern Village', 'Golzheim Dorm'],
-  'Leipzig': ['Zentrum Campus', 'Südvorstadt Residence', 'Plagwitz Student Lodge', 'Gohlis Wohnheim', 'Reudnitz Village', 'Connewitz Campus'],
-  'Dresden': ['Neustadt Campus', 'Altstadt Residence', 'Blasewitz Student Lodge', 'Striesen Wohnheim', 'Löbtau Village', 'Prohlis Dorm']
-};
+import { 
+  Machine, 
+  User, 
+  Reservation, 
+  ProfileRequest, 
+  UserQuery, 
+  Notification,
+  Location,
+  LocationStats
+} from '@/types';
+import { CITIES_AND_DORMS } from '@/constants';
 
 // Generate machines for each dorm
 function generateMachines(): Machine[] {

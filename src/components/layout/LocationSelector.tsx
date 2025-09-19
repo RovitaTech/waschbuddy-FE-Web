@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Badge } from '../ui/badge';
 import { MapPin, Building, Users } from 'lucide-react';
-import { CITIES_AND_DORMS, filterDataByLocation, mockMachines, mockUsers } from './utils/mockData';
+import { filterDataByLocation, mockMachines, mockUsers } from '../../utils/mockData';
+import { CITIES_AND_DORMS } from '@/constants';
 
 interface LocationSelectorProps {
   onLocationSelect: (location: { city: string; dorm: string | 'all' }) => void;

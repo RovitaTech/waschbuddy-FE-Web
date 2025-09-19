@@ -5,6 +5,9 @@ export * from './auth';
 export * from './users';
 export * from './machines';
 export * from './reservations';
+export * from './types';
+export * from './endpoints';
+export * from './services';
 
 // Base API configuration
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
