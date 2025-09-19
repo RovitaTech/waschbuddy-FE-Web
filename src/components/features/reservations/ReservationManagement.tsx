@@ -53,6 +53,7 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
       status: 'in-use',
       reservedAt: '2024-01-17T09:00:00',
       startTime: '2024-01-17T09:30:00',
+      endTime: '2024-01-17T10:30:00',
       timeRemaining: 35,
       paymentStatus: 'paid'
     },
@@ -65,6 +66,8 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
       machineName: 'Washer A-001',
       status: 'reserved',
       reservedAt: '2024-01-17T10:15:00',
+      startTime: '2024-01-17T11:00:00',
+      endTime: '2024-01-17T12:00:00',
       paymentStatus: 'paid'
     },
     {
@@ -76,6 +79,8 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
       machineName: 'Washer A-001',
       status: 'queued',
       reservedAt: '2024-01-17T10:30:00',
+      startTime: '2024-01-17T12:00:00',
+      endTime: '2024-01-17T13:00:00',
       queuePosition: 1,
       paymentStatus: 'pending'
     },
@@ -88,7 +93,64 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
       machineName: 'Washer B-001',
       status: 'expired',
       reservedAt: '2024-01-17T08:00:00',
+      startTime: '2024-01-17T08:15:00',
+      endTime: '2024-01-17T09:15:00',
       paymentStatus: 'refunded'
+    },
+    {
+      id: 'R005',
+      userId: '7',
+      userName: 'Lisa Chen',
+      userEmail: 'ws-lisa.chen@waschbar.com',
+      machineId: 'B-002',
+      machineName: 'Washer B-002',
+      status: 'completed',
+      reservedAt: '2024-01-17T07:00:00',
+      startTime: '2024-01-17T07:15:00',
+      endTime: '2024-01-17T08:15:00',
+      paymentStatus: 'paid'
+    },
+    {
+      id: 'R006',
+      userId: '8',
+      userName: 'David Kim',
+      userEmail: 'ws-david.kim@waschbar.com',
+      machineId: 'A-003',
+      machineName: 'Washer A-003',
+      status: 'in-use',
+      reservedAt: '2024-01-17T11:00:00',
+      startTime: '2024-01-17T11:10:00',
+      endTime: '2024-01-17T12:10:00',
+      timeRemaining: 25,
+      paymentStatus: 'paid'
+    },
+    {
+      id: 'R007',
+      userId: '9',
+      userName: 'Emma Wilson',
+      userEmail: 'ws-emma.wilson@waschbar.com',
+      machineId: 'A-001',
+      machineName: 'Washer A-001',
+      status: 'queued',
+      reservedAt: '2024-01-17T10:45:00',
+      startTime: '2024-01-17T13:00:00',
+      endTime: '2024-01-17T14:00:00',
+      queuePosition: 2,
+      paymentStatus: 'paid'
+    },
+    {
+      id: 'R008',
+      userId: '10',
+      userName: 'Michael Brown',
+      userEmail: 'ws-michael.brown@waschbar.com',
+      machineId: 'B-001',
+      machineName: 'Washer B-001',
+      status: 'queued',
+      reservedAt: '2024-01-17T11:30:00',
+      startTime: '2024-01-17T14:00:00',
+      endTime: '2024-01-17T15:00:00',
+      queuePosition: 1,
+      paymentStatus: 'pending'
     }
   ]);
 
@@ -165,12 +227,16 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
   };
 
   const handleStartMachine = (reservationId: string) => {
+    const startTime = new Date().toISOString();
+    const endTime = calculateEndTime(startTime, 60);
+    
     setReservations(reservations.map(reservation => 
       reservation.id === reservationId 
         ? { 
             ...reservation, 
             status: 'in-use' as const, 
-            startTime: new Date().toISOString(),
+            startTime,
+            endTime,
             timeRemaining: 60
           }
         : reservation
@@ -188,6 +254,29 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
     const now = new Date();
     const remaining = Math.max(0, Math.floor((expiryTime.getTime() - now.getTime()) / (1000 * 60)));
     return remaining;
+  };
+
+  const calculateEndTime = (startTime: string, durationMinutes: number = 60) => {
+    const start = new Date(startTime);
+    const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+    return end.toISOString();
+  };
+
+  const formatTimeRange = (startTime?: string, endTime?: string) => {
+    if (!startTime) return 'Not started';
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : new Date(calculateEndTime(startTime));
+    return `${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}`;
+  };
+
+  const formatReservationTime = (reservation: Reservation) => {
+    const reservedDate = new Date(reservation.reservedAt).toLocaleDateString();
+    if (reservation.startTime) {
+      const timeRange = formatTimeRange(reservation.startTime, reservation.endTime);
+      return `Reserved: ${reservedDate}\n${timeRange}`;
+    } else {
+      return `Reserved: ${reservedDate}`;
+    }
   };
 
   const getMachineReservations = (machineId: string) => {
@@ -347,7 +436,9 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    <p className="text-sm">Reserved: {new Date(reservation.reservedAt).toLocaleString()}</p>
+                    <div className="text-sm whitespace-pre-line">
+                      {formatReservationTime(reservation)}
+                    </div>
                     {reservation.status === 'reserved' && (
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">
@@ -419,7 +510,7 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
               const machineReservations = getMachineReservations(machineId);
               const currentUser = machineReservations.find(r => r.status === 'in-use');
               const reserved = machineReservations.find(r => r.status === 'reserved');
-              const queued = machineReservations.filter(r => r.status === 'queued').length;
+              const queuedUsers = machineReservations.filter(r => r.status === 'queued').sort((a, b) => (a.queuePosition || 0) - (b.queuePosition || 0));
               
               return (
                 <Card key={machineId} className="p-4">
@@ -430,22 +521,43 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                   <div className="space-y-2 text-sm">
                     {currentUser ? (
                       <div className="p-2 bg-green-50 rounded">
-                        <p className="text-green-700">In Use: {currentUser.userName}</p>
+                        <p className="text-green-700 font-medium">In Use: {currentUser.userName}</p>
                         <p className="text-green-600">{currentUser.timeRemaining} min remaining</p>
+                        <div className="text-green-500 text-xs whitespace-pre-line">
+                          {formatReservationTime(currentUser)}
+                        </div>
                       </div>
                     ) : reserved ? (
                       <div className="p-2 bg-blue-50 rounded">
-                        <p className="text-blue-700">Reserved: {reserved.userName}</p>
+                        <p className="text-blue-700 font-medium">Reserved: {reserved.userName}</p>
                         <p className="text-blue-600">{calculateTimeRemaining(reserved.reservedAt)} min left</p>
+                        <div className="text-blue-500 text-xs whitespace-pre-line">
+                          {formatReservationTime(reserved)}
+                        </div>
                       </div>
                     ) : (
                       <div className="p-2 bg-gray-50 rounded">
                         <p className="text-gray-700">Available</p>
                       </div>
                     )}
-                    {queued > 0 && (
+                    {queuedUsers.length > 0 && (
                       <div className="p-2 bg-orange-50 rounded">
-                        <p className="text-orange-700">{queued} in queue</p>
+                        <p className="text-orange-700 font-medium mb-2">Queue ({queuedUsers.length})</p>
+                        <div className="space-y-1">
+                          {queuedUsers.map((user, index) => (
+                            <div key={user.id} className="flex justify-between items-center text-xs">
+                              <div>
+                                <p className="text-orange-600 font-medium">#{user.queuePosition || index + 1} {user.userName}</p>
+                                <div className="text-orange-500 whitespace-pre-line">
+                                  {formatReservationTime(user)}
+                                </div>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {user.paymentStatus}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -490,15 +602,11 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                   </Badge>
                 </div>
                 <div>
-                  <h4 className="text-sm text-muted-foreground">Reserved At</h4>
-                  <p>{new Date(selectedReservation.reservedAt).toLocaleString()}</p>
-                </div>
-                {selectedReservation.startTime && (
-                  <div>
-                    <h4 className="text-sm text-muted-foreground">Started At</h4>
-                    <p>{new Date(selectedReservation.startTime).toLocaleString()}</p>
+                  <h4 className="text-sm text-muted-foreground">Reservation Time</h4>
+                  <div className="whitespace-pre-line">
+                    {formatReservationTime(selectedReservation)}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           )}

@@ -1,11 +1,5 @@
 import type { NextConfig } from "next";
 
-// Allow overriding the GitHub Pages base path via env var, e.g. NEXT_PUBLIC_BASE_PATH=web
-const rawBase = process.env.NEXT_PUBLIC_BASE_PATH?.trim() || "";
-const normalizedBase = rawBase
-  ? `/${rawBase.replace(/^\/+|\/+$/g, "")}`
-  : "";
-
 const nextConfig: NextConfig = {
   // Enable experimental features if needed
   experimental: {
@@ -33,11 +27,11 @@ const nextConfig: NextConfig = {
   },
   
   // For static export/GitHub Pages deployment
-  output: 'export',
-  trailingSlash: true,
-  // Use env-provided base when building for production; empty for local/dev
-  basePath: process.env.NODE_ENV === 'production' ? normalizedBase : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? normalizedBase : '',
+  // output: 'export',
+  // trailingSlash: true,
+  // GitHub Pages configuration
+  // basePath: '/waschbaer',
+  // assetPrefix: '/waschbaer/',
 };
 
 export default nextConfig;

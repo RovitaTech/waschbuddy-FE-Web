@@ -24,8 +24,10 @@ function generateMachines(): Machine[] {
       for (let i = 0; i < machineCount; i++) {
         const machineNum = String(machineCounter).padStart(3, '0');
         const type = Math.random() > 0.6 ? 'washer' : 'dryer';
-        const statuses = ['available', 'in_use', 'maintenance', 'offline'];
-        const status = statuses[Math.floor(Math.random() * statuses.length)] as Machine['status'];
+        // Create a more predictable status distribution for testing sorting
+        const statuses = ['maintenance', 'in_use', 'available', 'offline'];
+        const statusIndex = (machineCounter - 1) % 4; // Cycle through statuses
+        const status = statuses[statusIndex] as Machine['status'];
         
         machines.push({
           id: `${type.charAt(0).toUpperCase()}-${machineNum}`,
