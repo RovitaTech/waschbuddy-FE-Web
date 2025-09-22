@@ -45,7 +45,7 @@ jobs:
         NEXT_PUBLIC_APP_NAME: "WASCHBÄR Admin Panel"
         
     - name: Setup Pages
-      uses: actions/configure-pages@v4
+      uses: actions/configure-pages@v5
       with:
         static_site_generator: next
         
