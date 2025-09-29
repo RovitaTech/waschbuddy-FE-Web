@@ -1,4 +1,4 @@
-// Comprehensive mock data for the WASCHBÄR admin panel
+// Comprehensive mock data for the WASCHBUDDY admin panel
 
 import { 
   Machine, 

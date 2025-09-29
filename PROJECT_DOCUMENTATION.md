@@ -1,4 +1,4 @@
-# WASCHBÄR Admin Panel - Comprehensive Project Documentation
+# WASCHBUDDY Admin Panel - Comprehensive Project Documentation
 
 ## 📋 Table of Contents
 
@@ -17,7 +17,7 @@
 
 ## 🎯 Project Overview
 
-**WASCHBÄR** is a comprehensive multi-tenant SaaS laundry management system designed for student housing providers across the European Union. The platform serves multiple independent clients, each managing their own network of dormitories and laundry facilities. The system provides centralized administration, real-time machine monitoring, user management, and reservation handling through a modern web-based admin panel.
+**WASCHBUDDY** is a comprehensive multi-tenant SaaS laundry management system designed for student housing providers across the European Union. The platform serves multiple independent clients, each managing their own network of dormitories and laundry facilities. The system provides centralized administration, real-time machine monitoring, user management, and reservation handling through a modern web-based admin panel.
 
 ### Key Business Value
 - **Multi-tenant SaaS**: Serves multiple independent clients across the EU
@@ -692,7 +692,7 @@ cp .env.example .env.local
 
 # Edit configuration
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_APP_NAME=WASCHBÄR Admin Panel
+NEXT_PUBLIC_APP_NAME=WASCHBUDDY Admin Panel
 ```
 
 ### Available Scripts
@@ -779,7 +779,7 @@ CMD ["npm", "start"]
 # Production environment
 NODE_ENV=production
 NEXT_PUBLIC_API_URL=https://api.waschbaer.com
-NEXT_PUBLIC_APP_NAME=WASCHBÄR Admin Panel
+NEXT_PUBLIC_APP_NAME=WASCHBUDDY Admin Panel
 
 # Security
 SESSION_SECRET=your-session-secret
@@ -843,7 +843,7 @@ SMTP_PASS=your-app-password
 
 **Generated**: September 2025  
 **Version**: 1.0.0  
-**Project**: WASCHBÄR Multi-tenant SaaS Platform  
+**Project**: WASCHBUDDY Multi-tenant SaaS Platform  
 **Framework**: Next.js 15 + TypeScript  
 **Market**: European Union Student Housing Providers  
 **Architecture**: Multi-tenant SaaS with Complete Client Isolation

@@ -106,10 +106,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
         <div className="flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center space-x-2 md:space-x-4">
             <div className="hidden sm:block">
-              <h1 className="text-lg md:text-xl">WASCHBÄR ADMIN</h1>
+              <h1 className="text-lg md:text-xl">WASCHBUDDY ADMIN</h1>
             </div>
             <div className="sm:hidden">
-              <h1 className="text-base">WASCHBÄR</h1>
+              <h1 className="text-base">WASCHBUDDY</h1>
             </div>
             <div className="hidden md:block">
               <LocationSwitcher

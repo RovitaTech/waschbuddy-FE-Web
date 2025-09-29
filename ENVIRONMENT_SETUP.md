@@ -1,6 +1,6 @@
 # Environment Setup Guide
 
-This guide explains how to set up and manage different environments for the WASCHBÄR Admin Panel.
+This guide explains how to set up and manage different environments for the WASCHBUDDY Admin Panel.
 
 ## 📋 Available Environments
 

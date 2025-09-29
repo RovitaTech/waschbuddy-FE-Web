@@ -396,18 +396,18 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-3 text-sm">
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                  <Cpu className="h-4 w-4 text-gray-600" />
+                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                  <Cpu className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Model:</span>
                   <span className="font-medium">{machine.model}</span>
                 </div>
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                  <Tag className="h-4 w-4 text-gray-600" />
+                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Type:</span>
                   <span className="font-medium capitalize">{machine.type}</span>
                 </div>
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                  <Calendar className="h-4 w-4 text-gray-600" />
+                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Last Service:</span>
                   <span className="font-medium">{new Date(machine.lastMaintenance).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
@@ -516,29 +516,29 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
                 <div className="space-y-4 pr-6 lg:border-r border-gray-200">
                   <h3 className="text-lg font-semibold">Machine Details</h3>
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg w-full min-h-[60px]">
-                      <Tag className="h-5 w-5 text-gray-600 flex-shrink-0" />
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg w-full min-h-[60px]">
+                      <Tag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">Machine ID</p>
                         <p className="font-medium">{selectedMachine.id}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg w-full min-h-[60px]">
-                      <Cpu className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg w-full min-h-[60px]">
+                      <Cpu className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">Model</p>
                         <p className="font-medium">{selectedMachine.model}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg w-full min-h-[60px]">
-                      <Tag className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg w-full min-h-[60px]">
+                      <Tag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">Type</p>
                         <p className="font-medium capitalize">{selectedMachine.type}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg w-full min-h-[60px]">
-                      <Calendar className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg w-full min-h-[60px]">
+                      <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">Last Service</p>
                         <p className="font-medium">{new Date(selectedMachine.lastMaintenance).toLocaleDateString('en-US', { 

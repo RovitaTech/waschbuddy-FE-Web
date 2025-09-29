@@ -1,4 +1,4 @@
-// Central type definitions for the WASCHBÄR Admin Panel
+// Central type definitions for the WASCHBUDDY Admin Panel
 
 export interface Machine {
   id: string;

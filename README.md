@@ -1,6 +1,6 @@
-# WASCHBÄR Admin Panel - Next.js
+# WASCHBUDDY Admin Panel - Next.js
 
-Modern admin panel for WASCHBÄR laundry management system built with Next.js, TypeScript, and Tailwind CSS.
+Modern admin panel for WASCHBUDDY laundry management system built with Next.js, TypeScript, and Tailwind CSS.
 
 ## 🚀 Features
 
@@ -129,7 +129,7 @@ Environment variables can be set in `.env.local`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_APP_NAME=WASCHBÄR Admin Panel
+NEXT_PUBLIC_APP_NAME=WASCHBUDDY Admin Panel
 ```
 
 ## 📝 Notes

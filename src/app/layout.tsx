@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "WASCHBÄR Admin Panel",
-  description: "Admin panel for WASCHBÄR laundry management system",
+  title: "WASCHBUDDY Admin Panel",
+  description: "Admin panel for WASCHBUDDY laundry management system",
 };
 
 export default function RootLayout({

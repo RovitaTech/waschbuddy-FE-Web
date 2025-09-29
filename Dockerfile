@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for WASCHBÄR Admin Panel
+# Multi-stage Dockerfile for WASCHBUDDY Admin Panel
 FROM node:18-alpine AS base
 
 # Install dependencies only when needed

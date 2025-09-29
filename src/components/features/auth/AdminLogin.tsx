@@ -33,7 +33,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
           <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
             <span className="text-2xl text-primary-foreground">W</span>
           </div>
-          <CardTitle className="text-2xl">WASCHBÄR Admin</CardTitle>
+          <CardTitle className="text-2xl">WASCHBUDDY Admin</CardTitle>
           <CardDescription>
             Sign in to access the admin dashboard
           </CardDescription>
