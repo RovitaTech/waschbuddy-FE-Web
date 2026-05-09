@@ -5,11 +5,6 @@ const nextConfig: NextConfig = {
   experimental: {
     // Add any experimental features here
   },
-  // Skip ESLint during production builds (use CI linting instead)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Skip TypeScript type checking during builds (CI will handle type checks)
   typescript: {
     ignoreBuildErrors: true,
