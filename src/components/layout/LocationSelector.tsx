@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -78,8 +79,14 @@ export function LocationSelector({ onLocationSelect }: LocationSelectorProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
-            <span className="text-2xl text-primary-foreground">W</span>
+          <div className="mx-auto mb-4">
+            <Image
+              src="/waschbuddy-logo.svg"
+              alt="WASCHBUDDY logo"
+              width={56}
+              height={56}
+              className="h-14 w-auto"
+            />
           </div>
           <CardTitle className="text-2xl">Select Your Location</CardTitle>
           <CardDescription>

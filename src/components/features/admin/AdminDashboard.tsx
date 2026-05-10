@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Badge } from '../../ui/badge';
@@ -105,11 +106,15 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
       <header className="border-b bg-card">
         <div className="flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center space-x-2 md:space-x-4">
-            <div className="hidden sm:block">
-              <h1 className="text-lg md:text-xl">WASCHBUDDY ADMIN</h1>
-            </div>
-            <div className="sm:hidden">
-              <h1 className="text-base">WASCHBUDDY</h1>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/waschbuddy-logo.svg"
+                alt="WASCHBUDDY logo"
+                width={28}
+                height={33}
+                className="h-7 w-7"
+              />
+              <h1 className="text-base sm:text-lg md:text-xl">WASCHBUDDY</h1>
             </div>
             <div className="hidden md:block">
               <LocationSwitcher

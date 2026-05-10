@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from '@/lib/config/environment';
-import { getAuthToken } from './authToken';
+import { apiFetch } from './index';
 
 export const API_BASE_URL = getApiBaseUrl();
 
@@ -19,17 +19,13 @@ export async function apiRequest<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const token = getAuthToken();
 
   const headers = new Headers(options.headers ?? {});
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json');
   }
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
 
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     ...options,
     headers,
   });

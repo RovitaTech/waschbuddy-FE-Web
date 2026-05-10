@@ -1,4 +1,4 @@
-const AUTH_TOKEN_KEY = 'waschbuddy_auth_token';
+const AUTH_TOKEN_KEY = 'authToken';
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') {

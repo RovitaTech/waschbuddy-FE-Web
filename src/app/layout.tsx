@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Urbanist } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const inter = Inter({ 
+const urbanist = Urbanist({
   subsets: ["latin"],
   display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "WASCHBUDDY Admin Panel",
-  description: "Admin panel for WASCHBUDDY laundry management system",
+  title: "WASCHBUDDY",
+  description: "WASCHBUDDY laundry management system",
 };
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={urbanist.className}>
         <div className="min-h-screen">
           {children}
         </div>

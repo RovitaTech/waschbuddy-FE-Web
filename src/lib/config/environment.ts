@@ -33,7 +33,7 @@ export function getEnvironmentConfig(): AppConfig {
   
   return {
     // App Info
-    name: process.env.NEXT_PUBLIC_APP_NAME || 'WASCHBUDDY Admin Panel',
+    name: process.env.NEXT_PUBLIC_APP_NAME || 'WASCHBUDDY',
     version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
     environment,
     
