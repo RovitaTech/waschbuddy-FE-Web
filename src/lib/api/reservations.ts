@@ -1,7 +1,7 @@
 // Reservations API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockReservations } from '@/utils/mockData';
+import { mockReservations } from '@/dummy-data';
 
 export interface ReservationFilters {
   location?: { city: string; dorm: string | 'all' };
@@ -43,7 +43,7 @@ export async function updateReservationStatus(reservationId: string, status: str
   // Mock implementation
   const reservation = mockReservations.find((r: any) => r.id === reservationId);
   if (reservation) {
-    reservation.status = status;
+    reservation.status = status as typeof reservation.status;
   }
   return Promise.resolve(reservation);
 }

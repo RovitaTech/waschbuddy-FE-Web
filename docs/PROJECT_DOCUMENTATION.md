@@ -687,10 +687,7 @@ open http://localhost:3000
 
 ### Environment Configuration
 ```bash
-# Copy environment template
-cp .env.example .env.local
-
-# Edit configuration
+# Edit environment files directly
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_APP_NAME=WASCHBUDDY Admin Panel
 ```
@@ -699,12 +696,10 @@ NEXT_PUBLIC_APP_NAME=WASCHBUDDY Admin Panel
 ```bash
 # Development
 npm run dev              # Start dev server
-npm run dev:staging      # Start with staging config
-npm run dev:integration  # Start with integration config
 
 # Building
 npm run build           # Production build
-npm run build:staging   # Staging build
+npm run build:dev       # Development build
 npm run build:prod      # Production build
 
 # Quality
@@ -743,15 +738,6 @@ npm run analyze        # Bundle analysis
 
 ### Environment Setup
 
-#### Staging Deployment
-```bash
-# Build for staging
-npm run build:staging
-
-# Deploy to staging server
-./scripts/deploy.sh staging
-```
-
 #### Production Deployment
 ```bash
 # Build for production
@@ -759,19 +745,6 @@ npm run build:prod
 
 # Deploy to production
 ./scripts/deploy.sh production
-```
-
-### Docker Support
-```dockerfile
-# Dockerfile included for containerization
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
 ```
 
 ### Environment Variables

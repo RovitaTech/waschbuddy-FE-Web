@@ -18,7 +18,7 @@ import {
   User,
   Activity
 } from 'lucide-react';
-import { mockMachines, mockReservations, filterDataByLocation } from '../../../utils/mockData';
+import { mockMachines, mockReservations, filterDataByLocation } from '@/dummy-data';
 import { Machine } from '@/types';
 
 interface MachineDetailProps {

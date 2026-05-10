@@ -13,7 +13,7 @@ import {
   Settings,
   Check
 } from 'lucide-react';
-import { mockNotifications } from '../../utils/mockData';
+import { mockNotifications } from '@/dummy-data';
 import { Notification } from '@/types';
 
 interface NotificationsPanelProps {

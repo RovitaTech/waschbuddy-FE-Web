@@ -101,6 +101,7 @@ export interface LocationStats {
 export interface AuthCredentials {
   email: string;
   password: string;
+  dataSource?: 'dummy' | 'api';
 }
 
 export interface AuthUser {

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '../../ui/textarea';
 import { toast } from 'sonner';
 import { maskPhoneNumber } from '../../../utils/privacy';
+import { profileRequestsSeed } from '@/dummy-data/profile-requests/data';
 import { 
   Search, 
   Filter, 
@@ -43,62 +44,9 @@ interface ProfileRequestsManagementProps {
 }
 
 export function ProfileRequestsManagement({ location }: ProfileRequestsManagementProps) {
-  const [requests, setRequests] = useState<ProfileRequest[]>([
-    {
-      id: 'PR001',
-      userId: '2',
-      userName: 'Maria Schmidt',
-      userEmail: 'ws-maria.schmidt@waschbar.com',
-      requestType: 'email',
-      currentValue: 'maria.schmidt@student.uni.de',
-      requestedValue: 'maria.s.new@student.uni.de',
-      reason: 'University changed email format',
-      status: 'pending',
-      requestDate: '2024-01-17T10:30:00'
-    },
-    {
-      id: 'PR002',
-      userId: '3',
-      userName: 'Alex Weber',
-      userEmail: 'ws-alex.weber@waschbar.com',
-      requestType: 'phone',
-      currentValue: '+49 555 123 4567',
-      requestedValue: '+49 777 999 8888',
-      reason: 'Changed phone number',
-      status: 'approved',
-      requestDate: '2024-01-15T14:20:00',
-      processedDate: '2024-01-16T09:15:00',
-      processedBy: 'Admin User',
-      adminNotes: 'Verified through university records'
-    },
-    {
-      id: 'PR003',
-      userId: '4',
-      userName: 'Lisa Mueller',
-      userEmail: 'ws-lisa.mueller@waschbar.com',
-      requestType: 'email',
-      currentValue: 'lisa.old@student.uni.de',
-      requestedValue: 'lisa.suspicious@gmail.com',
-      reason: 'Personal preference',
-      status: 'rejected',
-      requestDate: '2024-01-14T16:45:00',
-      processedDate: '2024-01-15T10:30:00',
-      processedBy: 'Admin User',
-      adminNotes: 'Request denied - must use university email'
-    },
-    {
-      id: 'PR004',
-      userId: '5',
-      userName: 'Tom Mueller',
-      userEmail: 'ws-tom.mueller@waschbar.com',
-      requestType: 'phone',
-      currentValue: '+49 333 444 5555',
-      requestedValue: '+49 111 222 3333',
-      reason: 'Lost previous phone',
-      status: 'pending',
-      requestDate: '2024-01-17T08:15:00'
-    }
-  ]);
+  const [requests, setRequests] = useState<ProfileRequest[]>(
+    profileRequestsSeed.map((request) => ({ ...request })) as ProfileRequest[],
+  );
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');

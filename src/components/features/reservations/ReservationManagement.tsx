@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
 import { Progress } from '../../ui/progress';
+import { reservationMachineIds, reservationManagementSeed } from '@/dummy-data/reservations-management/data';
 import { 
   Search, 
   Filter, 
@@ -42,117 +43,9 @@ interface ReservationManagementProps {
 }
 
 export function ReservationManagement({ location }: ReservationManagementProps) {
-  const [reservations, setReservations] = useState<Reservation[]>([
-    {
-      id: 'R001',
-      userId: '2',
-      userName: 'Maria Schmidt',
-      userEmail: 'ws-maria.schmidt@waschbar.com',
-      machineId: 'A-002',
-      machineName: 'Washer A-002',
-      status: 'in-use',
-      reservedAt: '2024-01-17T09:00:00',
-      startTime: '2024-01-17T09:30:00',
-      endTime: '2024-01-17T10:30:00',
-      timeRemaining: 35,
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'R002',
-      userId: '3',
-      userName: 'Alex Weber',
-      userEmail: 'ws-alex.weber@waschbar.com',
-      machineId: 'A-001',
-      machineName: 'Washer A-001',
-      status: 'reserved',
-      reservedAt: '2024-01-17T10:15:00',
-      startTime: '2024-01-17T11:00:00',
-      endTime: '2024-01-17T12:00:00',
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'R003',
-      userId: '5',
-      userName: 'Tom Mueller',
-      userEmail: 'ws-tom.mueller@waschbar.com',
-      machineId: 'A-001',
-      machineName: 'Washer A-001',
-      status: 'queued',
-      reservedAt: '2024-01-17T10:30:00',
-      startTime: '2024-01-17T12:00:00',
-      endTime: '2024-01-17T13:00:00',
-      queuePosition: 1,
-      paymentStatus: 'pending'
-    },
-    {
-      id: 'R004',
-      userId: '6',
-      userName: 'Sarah Johnson',
-      userEmail: 'ws-sarah.johnson@waschbar.com',
-      machineId: 'B-001',
-      machineName: 'Washer B-001',
-      status: 'expired',
-      reservedAt: '2024-01-17T08:00:00',
-      startTime: '2024-01-17T08:15:00',
-      endTime: '2024-01-17T09:15:00',
-      paymentStatus: 'refunded'
-    },
-    {
-      id: 'R005',
-      userId: '7',
-      userName: 'Lisa Chen',
-      userEmail: 'ws-lisa.chen@waschbar.com',
-      machineId: 'B-002',
-      machineName: 'Washer B-002',
-      status: 'completed',
-      reservedAt: '2024-01-17T07:00:00',
-      startTime: '2024-01-17T07:15:00',
-      endTime: '2024-01-17T08:15:00',
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'R006',
-      userId: '8',
-      userName: 'David Kim',
-      userEmail: 'ws-david.kim@waschbar.com',
-      machineId: 'A-003',
-      machineName: 'Washer A-003',
-      status: 'in-use',
-      reservedAt: '2024-01-17T11:00:00',
-      startTime: '2024-01-17T11:10:00',
-      endTime: '2024-01-17T12:10:00',
-      timeRemaining: 25,
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'R007',
-      userId: '9',
-      userName: 'Emma Wilson',
-      userEmail: 'ws-emma.wilson@waschbar.com',
-      machineId: 'A-001',
-      machineName: 'Washer A-001',
-      status: 'queued',
-      reservedAt: '2024-01-17T10:45:00',
-      startTime: '2024-01-17T13:00:00',
-      endTime: '2024-01-17T14:00:00',
-      queuePosition: 2,
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'R008',
-      userId: '10',
-      userName: 'Michael Brown',
-      userEmail: 'ws-michael.brown@waschbar.com',
-      machineId: 'B-001',
-      machineName: 'Washer B-001',
-      status: 'queued',
-      reservedAt: '2024-01-17T11:30:00',
-      startTime: '2024-01-17T14:00:00',
-      endTime: '2024-01-17T15:00:00',
-      queuePosition: 1,
-      paymentStatus: 'pending'
-    }
-  ]);
+  const [reservations, setReservations] = useState<Reservation[]>(
+    reservationManagementSeed.map((reservation) => ({ ...reservation })) as Reservation[],
+  );
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -160,7 +53,7 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
-  const machines = ['A-001', 'A-002', 'A-003', 'B-001', 'B-002'];
+  const machines = [...reservationMachineIds];
 
   const getStatusColor = (status: string) => {
     switch (status) {

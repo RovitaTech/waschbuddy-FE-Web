@@ -1,7 +1,7 @@
 // Users API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockUsers } from '@/utils/mockData';
+import { mockUsers } from '@/dummy-data';
 import { User } from '@/types';
 
 export interface UserFilters {

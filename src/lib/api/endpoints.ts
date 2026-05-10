@@ -1,45 +1,87 @@
-// API endpoint definitions
+// API endpoint definitions — admin + super-admin only (mobile user endpoints excluded)
 
 export const ENDPOINTS = {
   AUTH: {
-    LOGIN: '/api/auth/login',
-    LOGOUT: '/api/auth/logout',
-    REFRESH: '/api/auth/refresh'
+    // Client admin
+    ADMIN_LOGIN: '/auth/admin/login',
+    ADMIN_SIGNUP: '/auth/admin/signup',
+    PROFILE: '/auth/profile',
+    // Super admin
+    SUPER_ADMIN_LOGIN: '/auth/super-admin/login',
+    SUPER_ADMIN_SIGNUP: '/auth/super-admin/signup',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
+    SET_PASSWORD: '/auth/set-password',
+  },
+  SUPER_ADMIN: {
+    // Users / clients
+    ALL_USERS: '/super-admin/clients/users',
+    USERS_STATS: '/super-admin/clients/users/stats',
+    ALL_CLIENTS: '/super-admin/clients',
+    CLIENT_BY_ID: (id: string) => `/super-admin/clients/${id}`,
+    DELETE_CLIENT: '/super-admin/clients/client',
+    // Dorms
+    ADD_DORM: '/super-admin/clients/dorms',
+    DELETE_DORM: '/super-admin/clients/dorms',
+    DELETE_MULTIPLE_DORMS: '/super-admin/clients/dorms/multiple',
+  },
+  OVERVIEW: {
+    CITIES: '/clients/cities',
+    DORMS: '/clients/dorms',
+    DORM_DETAIL: '/clients/dorm/detail',
+    DORM_MACHINES: '/clients/dorm/machines',
+    DORM_DATA: '/clients/dorm/data',
+    DORMS_DATA: '/clients/dorms/data',
   },
   MACHINES: {
-    LIST: '/api/machines',
-    DETAIL: (id: string) => `/api/machines/${id}`,
-    UPDATE_STATUS: (id: string) => `/api/machines/${id}/status`,
-    CREATE: '/api/machines'
+    ALL: '/clients/machines/all',
+    ADD: '/clients/machines',
+    BY_DORM: '/clients/machines/by-dorm',
+    DETAIL: '/clients/machines/detail',
+    UPDATE: (id: string) => `/clients/machines/${id}`,
+    DELETE: (id: string) => `/clients/machines/${id}`,
   },
-  USERS: {
-    LIST: '/api/users',
-    DETAIL: (id: string) => `/api/users/${id}`,
-    UPDATE: (id: string) => `/api/users/${id}`,
-    APPROVE: (id: string) => `/api/users/${id}/approve`,
-    SUSPEND: (id: string) => `/api/users/${id}/suspend`
+  USER_MANAGEMENT: {
+    USERS: '/clients/user-management/users',
+    USERS_STATS: '/clients/user-management/users/stats',
+    PROFILE_CHANGE_REQUESTS: '/clients/user-management/profile-change-requests',
+    PROFILE_CHANGE_REQUESTS_STATS: '/clients/user-management/profile-change-requests/stats',
+    APPROVE_REJECT_REQUEST: '/clients/user-management/profile-change-requests/approve-reject',
+    DELETE_USER: '/clients/user-management/users',
   },
   RESERVATIONS: {
-    LIST: '/api/reservations',
-    CREATE: '/api/reservations',
-    UPDATE: (id: string) => `/api/reservations/${id}`,
-    DELETE: (id: string) => `/api/reservations/${id}`
+    ALL: '/clients/reservations',
+    STATS: '/clients/reservations/stats',
+    CANCEL: '/clients/reservations/cancel',
+    START: '/clients/reservations/start',
+    ALL_QUEUES: '/clients/reservations/queue',
+    CANCEL_QUEUE: '/clients/reservations/queue/cancel',
+    CANCEL_ALL_QUEUES: '/clients/reservations/queue/cancel-all',
   },
   PROFILE_REQUESTS: {
-    LIST: '/api/profile-requests',
-    APPROVE: (id: string) => `/api/profile-requests/${id}/approve`,
-    REJECT: (id: string) => `/api/profile-requests/${id}/reject`
+    PENDING: '/clients/profiles-management/pending-users',
+    APPROVE: '/clients/profiles-management/approve-user',
+    REJECT: '/clients/profiles-management/reject-user',
+    SUSPEND: '/clients/profiles-management/suspend-user',
+    REACTIVATE: '/clients/profiles-management/reactivate-user',
+    SEND_EMAIL: '/clients/profiles-management/send-email',
   },
-  QUERIES: {
-    LIST: '/api/queries',
-    UPDATE: (id: string) => `/api/queries/${id}`
+  USER_QUERIES: {
+    ALL: '/clients/user-queries',
+    STATS: '/clients/user-queries/stats',
+    BY_ID: (id: string) => `/clients/user-queries/${id}`,
+    REPLY: '/clients/user-queries/reply',
+    UPDATE_STATUS: '/clients/user-queries',
   },
-  NOTIFICATIONS: {
-    LIST: '/api/notifications',
-    MARK_READ: (id: string) => `/api/notifications/${id}/read`
+  SETTINGS: {
+    GET_ALL: '/clients/settings',
+    UPDATE_ALL_DORMS: '/clients/settings/dorms/bulk',
+    RESET: '/clients/settings/reset',
+    DORM_SPECIFIC: (dormId: string) => `/clients/settings/dorm/${dormId}`,
+    ALL_DORMS_LIST: '/clients/settings/dorms/list',
+    ADD_MAINTENANCE_MESSAGE: '/clients/settings/maintenance-messages',
+    ADD_SINGLE_MACHINE_MAINTENANCE_MESSAGE: '/clients/settings/maintenance-messages/single-machine',
+    DELETE_MAINTENANCE_MESSAGE: (id: string) => `/clients/settings/maintenance-messages/${id}`,
+    SYSTEM_MESSAGES: '/clients/settings/system-messages',
   },
-  ANALYTICS: {
-    DASHBOARD: '/api/analytics/dashboard',
-    USAGE: '/api/analytics/usage'
-  }
 } as const;

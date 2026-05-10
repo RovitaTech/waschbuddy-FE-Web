@@ -27,7 +27,16 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   success: boolean;
-  token: string;
+  token?: string;
+  accessToken?: string;
+  data?: {
+    token?: string;
+    accessToken?: string;
+    user?: {
+      email?: string;
+      role?: string;
+    };
+  };
   user: {
     email: string;
     role: string;

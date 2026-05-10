@@ -25,7 +25,7 @@ import {
   Wifi,
   WifiOff
 } from 'lucide-react';
-import { filterDataByLocation, mockMachines } from '../../../utils/mockData';
+import { filterDataByLocation, mockMachines } from '@/dummy-data';
 import { Machine } from '@/types';
 import { CITIES_AND_DORMS } from '@/constants';
 import { toast } from 'sonner';

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { MapPin, Building, Users } from 'lucide-react';
-import { filterDataByLocation, mockMachines, mockUsers } from '../../utils/mockData';
+import { filterDataByLocation, mockMachines, mockUsers } from '@/dummy-data';
 import { CITIES_AND_DORMS } from '@/constants';
 
 interface LocationSelectorProps {

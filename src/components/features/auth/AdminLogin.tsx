@@ -1,29 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { DataSource, getStoredDataSource, setStoredDataSource } from '@/lib/config/dataSource';
 
 interface AdminLoginProps {
-  onLogin: (credentials: { email: string; password: string }) => void;
+  onLogin: (credentials: { email: string; password: string; dataSource: DataSource }) => Promise<void> | void;
 }
 
 export function AdminLogin({ onLogin }: AdminLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dataSource, setDataSource] = useState<DataSource>('dummy');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setDataSource(getStoredDataSource());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login delay
-    setTimeout(() => {
-      onLogin({ email, password });
+
+    try {
+      setStoredDataSource(dataSource);
+      await onLogin({ email, password, dataSource });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -40,6 +48,18 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="data-source">Data Source</Label>
+              <Select value={dataSource} onValueChange={(value: DataSource) => setDataSource(value)}>
+                <SelectTrigger id="data-source">
+                  <SelectValue placeholder="Select data source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dummy">Dummy Data</SelectItem>
+                  <SelectItem value="api">API Data</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -89,6 +109,11 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
             <p className="text-sm text-muted-foreground">
               Demo credentials: admin@waschbar.com / admin123
             </p>
+            {dataSource === 'api' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                API mode is temporary and can be removed later.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

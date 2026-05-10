@@ -12,7 +12,7 @@ import { Label } from '../../ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { toast } from 'sonner';
 import { maskPhoneNumber } from '../../../utils/privacy';
-import { filterDataByLocation, mockUsers } from '../../../utils/mockData';
+import { filterDataByLocation, mockUsers } from '@/dummy-data';
 import { User } from '@/types';
 import { 
   Search, 

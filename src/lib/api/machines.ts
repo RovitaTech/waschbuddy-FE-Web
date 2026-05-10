@@ -1,7 +1,7 @@
 // Machines API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockMachines } from '@/utils/mockData';
+import { mockMachines } from '@/dummy-data';
 import { Machine } from '@/types';
 
 export interface MachineFilters {

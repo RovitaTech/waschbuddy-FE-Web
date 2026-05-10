@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '../../ui/textarea';
 import { Label } from '../../ui/label';
 import { toast } from 'sonner';
-import { filterDataByLocation, mockUserQueries } from '../../../utils/mockData';
+import { filterDataByLocation, mockUserQueries } from '@/dummy-data';
 import { UserQuery } from '@/types';
 import { 
   Search, 

@@ -46,8 +46,6 @@ next-env.d.ts
 
 # Environment secrets (never commit production secrets)
 .env.production.local
-.env.staging.local
-.env.integration.local
 
 # Deployment logs
 deploy.log

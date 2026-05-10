@@ -2,12 +2,12 @@
 
 # Deployment script for different environments
 # Usage: ./scripts/deploy.sh [environment]
-# Example: ./scripts/deploy.sh staging
+# Example: ./scripts/deploy.sh production
 
 set -e  # Exit on any error
 
 ENVIRONMENT=${1:-development}
-ALLOWED_ENVIRONMENTS=("development" "staging" "integration" "production")
+ALLOWED_ENVIRONMENTS=("development" "production")
 
 # Color codes for output
 RED='\033[0;31m'
@@ -49,11 +49,6 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
-# Copy environment file to .env.local
-print_status "Setting up environment variables..."
-cp "$ENV_FILE" .env.local
-print_success "Environment variables configured for $ENVIRONMENT"
-
 # Install dependencies
 print_status "Installing dependencies..."
 npm ci
@@ -74,12 +69,6 @@ print_status "Building application for $ENVIRONMENT..."
 case $ENVIRONMENT in
     "development")
         npm run build:dev
-        ;;
-    "staging")
-        npm run build:staging
-        ;;
-    "integration")
-        npm run build:integration
         ;;
     "production")
         npm run build:prod
@@ -105,14 +94,6 @@ case $ENVIRONMENT in
     "development")
         print_status "Development environment ready"
         print_status "Start with: npm run dev"
-        ;;
-    "staging")
-        print_status "Staging environment ready"
-        print_status "Start with: npm run start:staging"
-        ;;
-    "integration")
-        print_status "Integration environment ready"
-        print_status "Start with: npm run start:integration"
         ;;
     "production")
         print_status "Production environment ready"

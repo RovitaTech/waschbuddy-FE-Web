@@ -1,7 +1,7 @@
 // Environment configuration utility
 // Centralizes all environment variable handling
 
-export type Environment = 'development' | 'staging' | 'integration' | 'production';
+export type Environment = 'development' | 'production';
 
 export interface AppConfig {
   // App Info
@@ -38,7 +38,7 @@ export function getEnvironmentConfig(): AppConfig {
     environment,
     
     // API Configuration
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || '',
     apiTimeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '5000'),
     
     // Feature Flags
@@ -59,14 +59,6 @@ export function getEnvironmentConfig(): AppConfig {
 // Environment checks
 export function isDevelopment(): boolean {
   return getEnvironmentConfig().environment === 'development';
-}
-
-export function isStaging(): boolean {
-  return getEnvironmentConfig().environment === 'staging';
-}
-
-export function isIntegration(): boolean {
-  return getEnvironmentConfig().environment === 'integration';
 }
 
 export function isProduction(): boolean {

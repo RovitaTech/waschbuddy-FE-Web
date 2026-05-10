@@ -7,6 +7,7 @@ import { LocationSelector } from '@/components/layout/LocationSelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from '@/hooks/useLocation';
 import { Location } from '@/types';
+import { DataSource } from '@/lib/config/dataSource';
 
 type AppState = 'login' | 'location' | 'dashboard';
 
@@ -15,7 +16,7 @@ export default function AdminPage() {
   const { login, logout, isAuthenticated } = useAuth();
   const { selectedLocation, selectLocation, clearLocation } = useLocation();
 
-  const handleLogin = async (credentials: { email: string; password: string }) => {
+  const handleLogin = async (credentials: { email: string; password: string; dataSource: DataSource }) => {
     const success = await login(credentials);
     if (success) {
       setAppState('location');

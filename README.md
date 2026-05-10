@@ -40,16 +40,6 @@ npm run build
 npm run start
 ```
 
-## 🐳 Docker Support
-
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui (Radix UI)
-- **Icons**: Lucide React
-- **Charts**: Recharts
-- **Notifications**: Sonner
-
 ## 📋 Demo Credentials
 
 ```
@@ -84,27 +74,30 @@ The application is automatically deployed to GitHub Pages on every push to main:
 ```
 src/
 ├── app/                # Next.js app router
-│   ├── layout.tsx     # Root layout
-│   └── page.tsx       # Main page with routing logic
-├── components/        # React components
-│   ├── ui/           # Reusable UI components
-│   ├── utils/        # Utility functions and mock data
-│   └── [features]/   # Feature-specific components
-├── lib/              # Library code
-│   └── api/          # API layer (ready for backend integration)
-└── styles/           # Global styles
+│   ├── admin/         # Admin route entry
+│   └── page.tsx       # Redirects to /admin
+├── components/        # Reusable and feature UI components
+├── dummy-data/        # Dummy datasets organized by screen/domain
+├── lib/               # API/config shared utilities
+└── styles/            # Global styles
 ```
 
 ## 🔌 API Integration
 
-The project includes a complete API layer structure in `src/lib/api/` that currently uses mock data but is ready for backend integration:
+The project includes a complete API layer structure in `src/lib/api/` and a dedicated dummy-data module in `src/dummy-data/`.
+
+Temporary login data-source selector:
+- `Dummy Data`
+- `API Data`
+
+This temporary selector is available on the login screen and can be removed later.
 
 - `auth.ts` - Authentication endpoints
 - `users.ts` - User management endpoints  
 - `machines.ts` - Machine management endpoints
 - `reservations.ts` - Reservation endpoints
 
-Simply replace the mock implementations with actual API calls when your backend is ready.
+When backend rollout is complete, keep API mode only and remove the selector.
 
 ## 🌐 Multi-tenant Support
 
@@ -125,7 +118,7 @@ npm start
 
 ## 🔧 Configuration
 
-Environment variables can be set in `.env.local`:
+Environment variables are defined in `.env.development` and `.env.production`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
@@ -139,3 +132,12 @@ NEXT_PUBLIC_APP_NAME=WASCHBUDDY Admin Panel
 - API layer is structured and ready for backend integration
 - UI components are identical to the original design
 - Full TypeScript support with proper type definitions
+
+## 📚 Documentation
+
+- `docs/ENVIRONMENT_SETUP.md`
+- `docs/PROJECT_DOCUMENTATION.md`
+- `docs/SETTINGS_API_DOCUMENTATION.md`
+- `docs/SETTINGS_MULTI_TENANT_EXPLANATION.md`
+- `docs/architecture.md`
+- `agents.md`

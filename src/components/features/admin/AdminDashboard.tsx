@@ -37,7 +37,7 @@ import { AdminSettings } from './AdminSettings';
 import { LocationSwitcher } from '../../layout/LocationSwitcher';
 import { MachineDetail } from '../machines/MachineDetail';
 import { NotificationsPanel } from '../../layout/NotificationsPanel';
-import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from '../../../utils/mockData';
+import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from '@/dummy-data';
 import { toast } from 'sonner';
 
 interface AdminDashboardProps {

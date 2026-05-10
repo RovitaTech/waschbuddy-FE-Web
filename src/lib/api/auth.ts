@@ -1,8 +1,6 @@
 // Authentication API functions
 // Currently using mock data - replace with actual API calls when backend is ready
 
-import { mockUsers } from '@/utils/mockData';
-
 export interface LoginCredentials {
   email: string;
   password: string;

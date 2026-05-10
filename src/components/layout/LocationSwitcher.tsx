@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { MapPin, Building, ArrowLeft } from 'lucide-react';
-import { filterDataByLocation, mockMachines, mockUsers } from '../../utils/mockData';
+import { filterDataByLocation, mockMachines, mockUsers } from '@/dummy-data';
 import { CITIES_AND_DORMS } from '@/constants';
 
 interface LocationSwitcherProps {
