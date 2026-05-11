@@ -12,13 +12,74 @@ import {
   PaginationParams
 } from '@/types';
 import {
+  BulkCreateCitiesRequest,
+  BulkCreateCitiesResponse,
+  City,
+  CityFilters,
+  ClientCity,
+  ClientDorm,
+  ClientDormApiResponse,
+  ClientDormsRequest,
+  Country,
+  CreateCountryRequest,
+  CreateDormRequest,
   LoginRequest,
   LoginResponse,
   MachineStatusUpdate,
+  SignupRequest,
   UserApprovalRequest,
   QueryResponseRequest,
+  DormWithLocation,
   PaginatedResponse
 } from './types';
+
+const buildQueryString = (params: Record<string, string | undefined>): string => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) searchParams.append(key, value);
+  });
+
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : '';
+};
+
+const extractList = <T>(response: unknown, collectionKeys: string[] = []): T[] => {
+  if (Array.isArray(response)) return response as T[];
+  if (!response || typeof response !== 'object') return [];
+
+  const record = response as Record<string, unknown>;
+
+  for (const key of collectionKeys) {
+    if (Array.isArray(record[key])) return record[key] as T[];
+  }
+
+  if (Array.isArray(record.data)) return record.data as T[];
+  if (record.data && typeof record.data === 'object') {
+    const dataRecord = record.data as Record<string, unknown>;
+
+    for (const key of collectionKeys) {
+      if (Array.isArray(dataRecord[key])) return dataRecord[key] as T[];
+    }
+
+    if (Array.isArray(dataRecord.data)) return dataRecord.data as T[];
+    if (Array.isArray(dataRecord.items)) return dataRecord.items as T[];
+  }
+
+  if (Array.isArray(record.items)) return record.items as T[];
+  if (Array.isArray(record.results)) return record.results as T[];
+
+  return [];
+};
+
+const mapClientDorm = (dorm: ClientDormApiResponse): ClientDorm => ({
+  id: dorm.dormId ?? dorm.id ?? '',
+  name: dorm.dormName ?? dorm.name ?? '',
+  address: dorm.dormAddress ?? dorm.address,
+  cityId: dorm.cityId,
+  machineCount: dorm.machineCount ?? 0,
+  userCount: dorm.userCount ?? 0
+});
 
 // Auth Services
 export const authService = {
@@ -35,6 +96,13 @@ export const authService = {
 
   adminSignup: async (payload: object): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.AUTH.ADMIN_SIGNUP, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  signup: async (payload: SignupRequest): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.AUTH.SIGNUP, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
@@ -101,8 +169,47 @@ export const superAdminService = {
     });
   },
 
-  addDorm: async (body: object): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.ADD_DORM, {
+  getCountries: async (): Promise<Country[]> => {
+    return apiRequest<Country[]>(ENDPOINTS.SUPER_ADMIN.COUNTRIES);
+  },
+
+  addCountry: async (body: CreateCountryRequest): Promise<Country> => {
+    return apiRequest<Country>(ENDPOINTS.SUPER_ADMIN.COUNTRIES, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
+  getCities: async (filters?: CityFilters): Promise<City[]> => {
+    const queryString = buildQueryString({
+      countryId: filters?.countryId,
+      clientId: filters?.clientId
+    });
+
+    return apiRequest<City[]>(`${ENDPOINTS.SUPER_ADMIN.CITIES}${queryString}`);
+  },
+
+  addCities: async (body: BulkCreateCitiesRequest): Promise<BulkCreateCitiesResponse> => {
+    return apiRequest<BulkCreateCitiesResponse>(ENDPOINTS.SUPER_ADMIN.CITIES, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
+  deleteCity: async (id: string): Promise<void> => {
+    return apiRequest<void>(ENDPOINTS.SUPER_ADMIN.DELETE_CITY(id), {
+      method: 'DELETE'
+    });
+  },
+
+  getDorms: async (filters?: { clientId?: string }): Promise<DormWithLocation[]> => {
+    const queryString = buildQueryString({ clientId: filters?.clientId });
+
+    return apiRequest<DormWithLocation[]>(`${ENDPOINTS.SUPER_ADMIN.ALL_DORMS}${queryString}`);
+  },
+
+  addDorm: async (body: CreateDormRequest): Promise<DormWithLocation> => {
+    return apiRequest<DormWithLocation>(ENDPOINTS.SUPER_ADMIN.ADD_DORM, {
       method: 'POST',
       body: JSON.stringify(body)
     });
@@ -125,18 +232,24 @@ export const superAdminService = {
 
 // Overview Services
 export const overviewService = {
-  getCities: async (body?: object): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.OVERVIEW.CITIES, {
+  getCities: async (body?: object): Promise<ClientCity[]> => {
+    const response = await apiRequest<unknown>(ENDPOINTS.OVERVIEW.CITIES, {
       method: 'POST',
       body: JSON.stringify(body ?? {})
     });
+
+    return extractList<ClientCity>(response, ['cities']);
   },
 
-  getDorms: async (body?: object): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.OVERVIEW.DORMS, {
+  getDorms: async (body: ClientDormsRequest): Promise<ClientDorm[]> => {
+    const response = await apiRequest<unknown>(ENDPOINTS.OVERVIEW.DORMS, {
       method: 'POST',
-      body: JSON.stringify(body ?? {})
+      body: JSON.stringify(body)
     });
+
+    return extractList<ClientDormApiResponse>(response, ['dorms'])
+      .map(mapClientDorm)
+      .filter((dorm) => dorm.id && dorm.name);
   },
 
   getDormDetail: async (body: object): Promise<any> => {
@@ -160,7 +273,7 @@ export const overviewService = {
     });
   },
 
-  getDormsData: async (body: object): Promise<any> => {
+  getDormsData: async (body: ClientDormsRequest): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.OVERVIEW.DORMS_DATA, {
       method: 'POST',
       body: JSON.stringify(body)

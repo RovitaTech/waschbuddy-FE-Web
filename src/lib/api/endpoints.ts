@@ -2,6 +2,7 @@
 
 export const ENDPOINTS = {
   AUTH: {
+    SIGNUP: '/auth/signup',
     // Client admin
     ADMIN_LOGIN: '/auth/admin/login',
     ADMIN_SIGNUP: '/auth/admin/signup',
@@ -20,7 +21,13 @@ export const ENDPOINTS = {
     ALL_CLIENTS: '/super-admin/clients',
     CLIENT_BY_ID: (id: string) => `/super-admin/clients/${id}`,
     DELETE_CLIENT: '/super-admin/clients/client',
+    // Countries
+    COUNTRIES: '/super-admin/countries',
+    // Cities
+    CITIES: '/super-admin/cities',
+    DELETE_CITY: (id: string) => `/super-admin/cities/${id}`,
     // Dorms
+    ALL_DORMS: '/super-admin/clients/dorms',
     ADD_DORM: '/super-admin/clients/dorms',
     DELETE_DORM: '/super-admin/clients/dorms',
     DELETE_MULTIPLE_DORMS: '/super-admin/clients/dorms/multiple',

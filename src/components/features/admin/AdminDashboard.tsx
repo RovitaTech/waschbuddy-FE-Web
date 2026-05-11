@@ -39,12 +39,13 @@ import { LocationSwitcher } from '../../layout/LocationSwitcher';
 import { MachineDetail } from '../machines/MachineDetail';
 import { NotificationsPanel } from '../../layout/NotificationsPanel';
 import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from '@/dummy-data';
+import { Location } from '@/types';
 import { toast } from 'sonner';
 
 interface AdminDashboardProps {
   onLogout: () => void;
-  location: { city: string; dorm: string | 'all' };
-  onLocationChange: (location: { city: string; dorm: string | 'all' }) => void;
+  location: Location;
+  onLocationChange: (location: Location) => void;
   onBackToLocationSelect: () => void;
 }
 

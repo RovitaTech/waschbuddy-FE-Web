@@ -43,6 +43,109 @@ export interface LoginResponse {
   };
 }
 
+export interface SignupRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  cityId: string;
+  dormId: string;
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  dialCode: string;
+}
+
+export interface CreateCountryRequest {
+  name: string;
+  code: string;
+  dialCode: string;
+}
+
+export interface City {
+  id: string;
+  name: string;
+  countryId: string;
+  clientId: string;
+  country?: Country;
+}
+
+export interface ClientCity {
+  id: string;
+  name: string;
+  country: Pick<Country, 'name' | 'code'>;
+  dormCount: number;
+}
+
+export interface ClientDorm {
+  id: string;
+  name: string;
+  cityId?: string;
+  address?: string;
+  machineCount?: number;
+  userCount?: number;
+}
+
+export interface ClientDormApiResponse {
+  dormId?: string;
+  id?: string;
+  dormName?: string;
+  name?: string;
+  dormAddress?: string;
+  address?: string;
+  cityId?: string;
+  machineCount?: number;
+  userCount?: number;
+}
+
+export interface CityFilters {
+  countryId?: string;
+  clientId?: string;
+}
+
+export interface CreateCityRequest {
+  name: string;
+  countryId: string;
+  clientId: string;
+}
+
+export interface BulkCreateCitiesRequest {
+  cities: CreateCityRequest[];
+}
+
+export interface BulkCreateCitiesResponse {
+  created: City[];
+  skipped: CreateCityRequest[];
+  summary: {
+    created: number;
+    skipped: number;
+  };
+}
+
+export interface DormWithLocation {
+  id: string;
+  name: string;
+  address: string;
+  cityId: string;
+  clientId: string;
+  city?: City;
+  country?: Country;
+}
+
+export interface CreateDormRequest {
+  name: string;
+  address: string;
+  cityId: string;
+  clientId: string;
+}
+
+export interface ClientDormsRequest {
+  cityId: string;
+}
+
 export interface MachineStatusUpdate {
   status: 'available' | 'in_use' | 'maintenance' | 'offline';
   issue?: string;

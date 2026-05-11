@@ -87,6 +87,8 @@ export interface Notification {
 export interface Location {
   city: string;
   dorm: string | 'all';
+  cityId?: string;
+  dormId?: string;
 }
 
 export interface LocationStats {
