@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { MapPin, Building, ArrowLeft, Loader2 } from 'lucide-react';
-import { filterDataByLocation, mockMachines, mockUsers } from '@/dummy-data';
 import { CITIES_AND_DORMS } from '@/constants';
 import { overviewService } from '@/lib/api';
 import { ClientDorm } from '@/lib/api/types';
@@ -65,10 +64,9 @@ export function LocationSwitcher({ currentLocation, onLocationChange, onBackToLo
         machineCount: 0,
         userCount: 0,
       }));
-  
-  // Get total counts for "All Dormitories" option
-  const allCityMachines = filterDataByLocation(mockMachines, { city: currentLocation.city, dorm: 'all' });
-  const allCityUsers = filterDataByLocation(mockUsers, { city: currentLocation.city, dorm: 'all' });
+
+  const totalMachines = availableDorms.reduce((sum, dorm) => sum + (dorm.machineCount ?? 0), 0);
+  const totalUsers = availableDorms.reduce((sum, dorm) => sum + (dorm.userCount ?? 0), 0);
 
   const handleDormChange = useCallback((dormValue: string) => {
     const selectedDorm = availableDorms.find((dorm) => dorm.name === dormValue);
@@ -109,7 +107,7 @@ export function LocationSwitcher({ currentLocation, onLocationChange, onBackToLo
               <div className="flex flex-col items-start">
                 <span className="text-sm">All Dormitories</span>
                 <span className="text-xs text-muted-foreground">
-                  {allCityMachines.length} machines • {allCityUsers.length} users • {availableDorms.length} dorms
+                  {totalMachines} machines • {totalUsers} users • {availableDorms.length} dorms
                 </span>
               </div>
             </SelectItem>
@@ -127,14 +125,12 @@ export function LocationSwitcher({ currentLocation, onLocationChange, onBackToLo
               </SelectItem>
             )}
             {availableDorms.map((dorm, index) => {
-              const dormMachines = filterDataByLocation(mockMachines, { city: currentLocation.city, dorm: dorm.name });
-              const dormUsers = filterDataByLocation(mockUsers, { city: currentLocation.city, dorm: dorm.name });
               return (
                 <SelectItem key={`${currentLocation.city}-${dorm.id}-${index}`} value={dorm.name}>
                   <div className="flex flex-col items-start">
                     <span className="text-sm">{dorm.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {dormMachines.length} machines • {dormUsers.length} users
+                      {dorm.machineCount ?? 0} machines • {dorm.userCount ?? 0} users
                     </span>
                   </div>
                 </SelectItem>

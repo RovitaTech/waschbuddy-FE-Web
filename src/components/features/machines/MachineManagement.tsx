@@ -23,70 +23,200 @@ import {
   Calendar,
   Cpu,
   Wifi,
-  WifiOff
+  WifiOff,
+  Loader2
 } from 'lucide-react';
 import { filterDataByLocation, mockMachines } from '@/dummy-data';
+import { machineService, overviewService } from '@/lib/api';
+import { ClientMachineResponse, ClientDorm, CreateMachineStatus } from '@/lib/api/types';
+import { ApiHttpError } from '@/lib/api';
 import { Machine } from '@/types';
+import { Location } from '@/types';
 import { CITIES_AND_DORMS } from '@/constants';
 import { toast } from 'sonner';
 
 interface MachineManagementProps {
-  location: { city: string; dorm: string | 'all' };
+  location: Location;
+  initialStatusFilter?: 'all' | 'available' | 'in_use' | 'maintenance' | 'offline';
   onMachineClick?: (machineId: string) => void;
 }
 
 // Store added machines globally to persist across location changes
 let globalAddedMachines: Machine[] = [];
 
-export function MachineManagement({ location, onMachineClick }: MachineManagementProps) {
+const mapApiStatusToUiStatus = (status?: string): Machine['status'] => {
+  switch ((status ?? '').toUpperCase()) {
+    case 'ACTIVE':
+    case 'AVAILABLE':
+      return 'available';
+    case 'RESERVED':
+    case 'IN_USE':
+      return 'in_use';
+    case 'OUT_OF_ORDER':
+    case 'MAINTENANCE':
+      return 'maintenance';
+    case 'INACTIVE':
+    case 'OFFLINE':
+      return 'offline';
+    default:
+      return 'available';
+  }
+};
+
+const mapUiStatusToApiStatus = (status: string): CreateMachineStatus | undefined => {
+  switch (status) {
+    case 'in_use':
+      return 'RESERVED';
+    case 'maintenance':
+      return 'MAINTENANCE';
+    case 'offline':
+      return 'OFFLINE';
+    case 'available':
+      return 'ACTIVE';
+    default:
+      return undefined;
+  }
+};
+
+const mapApiMachineToUiMachine = (machine: ClientMachineResponse, location: Location): Machine => {
+  const machineNumberSuffix = typeof machine.machineNumber === 'number' ? `-${String(machine.machineNumber).padStart(3, '0')}` : '';
+
+  return {
+    id: machine.id,
+    name: machine.name ? `${machine.name}${machineNumberSuffix}` : `Machine${machineNumberSuffix || ''}`,
+    type: machine.type === 1 ? 'dryer' : 'washer',
+    status: mapApiStatusToUiStatus(machine.status),
+    location: machine.dormId ?? location.dorm,
+    dorm: location.dorm === 'all' ? (machine.dormId ?? 'Unknown dorm') : location.dorm,
+    city: location.city,
+    lastMaintenance: machine.lastMaintenanceDate ?? machine.updatedAt ?? machine.createdAt ?? new Date().toISOString(),
+    totalCycles: 0,
+    model: machine.model ?? 'Unknown model'
+  };
+};
+
+export function MachineManagement({ location, initialStatusFilter = 'all', onMachineClick }: MachineManagementProps) {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isLoadingMachines, setIsLoadingMachines] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedDorm, setSelectedDorm] = useState('');
+  const [isAddingMachine, setIsAddingMachine] = useState(false);
+  const [selectedDormId, setSelectedDormId] = useState('');
+  const [dormOptions, setDormOptions] = useState<ClientDorm[]>([]);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const [newMachine, setNewMachine] = useState({
     name: '',
     type: 'washer' as 'washer' | 'dryer',
-    dorm: '',
+    serialNumber: '',
     model: '',
-    status: 'available' as Machine['status']
+    installationDate: '',
+    status: 'ACTIVE' as CreateMachineStatus
   });
 
-  // Update machines when location changes, including any added machines
+  const CREATE_MACHINE_STATUSES: Array<Exclude<CreateMachineStatus, 'RESERVED'>> = [
+    'ACTIVE',
+    'INACTIVE',
+    'MAINTENANCE',
+    'OUT_OF_ORDER',
+    'OFFLINE'
+  ];
+
   useEffect(() => {
-    const originalMachines = filterDataByLocation(mockMachines, location);
-    const addedMachinesForLocation = globalAddedMachines.filter(machine => {
-      if (location.dorm === 'all') {
-        return machine.city === location.city;
+    let isActive = true;
+
+    const loadDormOptions = async () => {
+      if (!location.cityId) {
+        if (isActive) {
+          const fallbackDorms = (CITIES_AND_DORMS[location.city as keyof typeof CITIES_AND_DORMS] ?? []).map((name) => ({
+            id: name,
+            name
+          }));
+          setDormOptions(fallbackDorms);
+        }
+        return;
       }
-      return machine.city === location.city && machine.dorm === location.dorm;
-    });
-    
-    // Sort machines by status priority: maintenance -> in_use -> available -> offline
-    const allMachines = [...originalMachines, ...addedMachinesForLocation];
-    const sortedMachines = allMachines.sort((a, b) => {
-      const statusPriority = {
-        'maintenance': 1,
-        'in_use': 2,
-        'available': 3,
-        'offline': 4
-      };
-      
-      const priorityA = statusPriority[a.status as keyof typeof statusPriority] || 5;
-      const priorityB = statusPriority[b.status as keyof typeof statusPriority] || 5;
-      
-      if (priorityA === priorityB) {
-        return a.id.localeCompare(b.id);
+
+      try {
+        const dorms = await overviewService.getDorms({ cityId: location.cityId });
+        if (isActive) {
+          setDormOptions(dorms);
+        }
+      } catch {
+        if (isActive) {
+          setDormOptions([]);
+        }
       }
-      
-      return priorityA - priorityB;
-    });
-    
-    setMachines(sortedMachines);
-  }, [location.city, location.dorm]); // More specific dependencies to prevent unnecessary re-renders
+    };
+
+    void loadDormOptions();
+
+    return () => {
+      isActive = false;
+    };
+  }, [location.city, location.cityId]);
+
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadMachines = async () => {
+      if (!location.cityId) {
+        const originalMachines = filterDataByLocation(mockMachines, location);
+        if (isActive) {
+          setMachines(originalMachines);
+          setLoadError(null);
+        }
+        return;
+      }
+
+      try {
+        setIsLoadingMachines(true);
+        setLoadError(null);
+
+        const apiMachines = await machineService.getMachines({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {}),
+          ...(statusFilter !== 'all' ? { status: mapUiStatusToApiStatus(statusFilter) } : {})
+        });
+
+        if (!isActive) return;
+
+        const mappedMachines = apiMachines.map((machine) => mapApiMachineToUiMachine(machine, location));
+
+        const addedMachinesForLocation = globalAddedMachines.filter(machine => {
+          if (location.dorm === 'all') {
+            return machine.city === location.city;
+          }
+          return machine.city === location.city && machine.dorm === location.dorm;
+        });
+
+        setMachines([...mappedMachines, ...addedMachinesForLocation]);
+      } catch {
+        if (!isActive) return;
+
+        setLoadError('Unable to load machines.');
+        const fallbackMachines = filterDataByLocation(mockMachines, location);
+        setMachines(fallbackMachines);
+      } finally {
+        if (isActive) {
+          setIsLoadingMachines(false);
+        }
+      }
+    };
+
+    void loadMachines();
+
+    return () => {
+      isActive = false;
+    };
+  }, [location.city, location.dorm, location.cityId, location.dormId, statusFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -157,69 +287,94 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
     const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          machine.dorm.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          machine.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || machine.status === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    return matchesSearch;
   });
 
-  const getNextMachineId = () => {
-    const targetDorm = location.dorm === 'all' ? selectedDorm : location.dorm;
-    const existingMachines = filterDataByLocation(mockMachines, { city: location.city, dorm: targetDorm });
-    const addedMachinesForDorm = globalAddedMachines.filter(machine => 
-      machine.city === location.city && machine.dorm === targetDorm
-    );
-    
-    const allMachines = [...existingMachines, ...addedMachinesForDorm];
-    
-    const maxId = allMachines.reduce((max, machine) => {
-      const idParts = machine.id.split('-');
-      if (idParts.length > 1) {
-        const idNum = parseInt(idParts[1]);
-        return idNum > max ? idNum : max;
-      }
-      return max;
-    }, 0);
-    
-    return String(maxId + 1).padStart(3, '0');
-  };
+  const handleAddMachine = async () => {
+    if (isAddingMachine) {
+      return;
+    }
 
-  const handleAddMachine = () => {
-    if (!newMachine.type || (location.dorm === 'all' && !selectedDorm)) {
+    if (!location.cityId) {
+      toast.error('City ID is missing. Please reselect location.');
+      return;
+    }
+
+    const inferredDormId = dormOptions.find((dorm) => dorm.name === location.dorm)?.id;
+    const targetDormId = location.dorm === 'all' ? selectedDormId : (location.dormId ?? inferredDormId ?? '');
+
+    if (
+      !newMachine.name.trim() ||
+      !newMachine.serialNumber.trim() ||
+      !newMachine.model.trim() ||
+      !newMachine.installationDate ||
+      !targetDormId
+    ) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    const targetDorm = location.dorm === 'all' ? selectedDorm : location.dorm;
-    const nextId = getNextMachineId();
-    const machineId = `${newMachine.type === 'washer' ? 'W' : 'D'}-${nextId}`;
-    
-    const newMachineData: Machine = {
-      id: machineId,
-      name: `${newMachine.type === 'washer' ? 'Washer' : 'Dryer'} M-${nextId}`,
-      type: newMachine.type,
-      status: newMachine.status,
-      location: targetDorm,
-      dorm: targetDorm,
-      city: location.city,
-      lastMaintenance: new Date().toISOString().split('T')[0],
-      totalCycles: 0,
-      model: newMachine.model || (newMachine.type === 'washer' ? 'AquaClean Pro 2000' : 'DryMaster Elite 1500')
-    };
+    const machineName = newMachine.name.trim();
+    const targetDormName = dormOptions.find((dorm) => dorm.id === targetDormId)?.name ?? location.dorm;
+    const machineType: 0 | 1 = newMachine.type === 'washer' ? 0 : 1;
 
-    // Add to global storage and local state
-    globalAddedMachines.push(newMachineData);
-    setMachines([...machines, newMachineData]);
-    
-    setNewMachine({
-      name: '',
-      type: 'washer',
-      dorm: '',
-      model: '',
-      status: 'available'
-    });
-    setSelectedDorm('');
-    setIsAddDialogOpen(false);
-    
-    toast.success(`Machine ${newMachineData.name} added successfully to ${targetDorm}`);
+    try {
+      setIsAddingMachine(true);
+
+      const payload = {
+        name: machineName,
+        type: machineType,
+        status: newMachine.status,
+        dormId: targetDormId,
+        serialNumber: newMachine.serialNumber.trim(),
+        model: newMachine.model.trim(),
+        installationDate: new Date(`${newMachine.installationDate}T00:00:00.000Z`).toISOString()
+      };
+
+      await machineService.addMachine(payload);
+
+      const apiMachines = await machineService.getMachines({
+        cityId: location.cityId,
+        ...(location.dormId ? { dormId: location.dormId } : {}),
+        ...(statusFilter !== 'all' ? { status: mapUiStatusToApiStatus(statusFilter) } : {})
+      });
+      setMachines(apiMachines.map((machine) => mapApiMachineToUiMachine(machine, location)));
+
+      setNewMachine({
+        name: '',
+        type: 'washer',
+        serialNumber: '',
+        model: '',
+        installationDate: '',
+        status: 'ACTIVE'
+      });
+      setSelectedDormId('');
+      setIsAddDialogOpen(false);
+
+      toast.success(`Machine ${machineName} added successfully to ${targetDormName}`);
+    } catch (error) {
+      if (error instanceof ApiHttpError) {
+        const responseMessage =
+          error.responseBody && typeof error.responseBody === 'object'
+            ? (error.responseBody as { message?: string }).message
+            : undefined;
+
+        const message = responseMessage || error.message || 'Failed to add machine. Please try again.';
+        console.groupCollapsed(`[machines:add] API error (${error.status})`);
+        console.warn('message:', message);
+        console.debug('responseBody:', error.responseBody);
+        console.groupEnd();
+        toast.error(message);
+        return;
+      }
+
+      console.warn('[machines:add] unexpected error');
+      console.debug(error);
+      toast.error('Failed to add machine. Please try again.');
+    } finally {
+      setIsAddingMachine(false);
+    }
   };
 
   const handleDeleteMachine = (machineId: string) => {
@@ -273,6 +428,17 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label htmlFor="machine-name" className="sm:text-right">Name</Label>
+                <Input
+                  id="machine-name"
+                  value={newMachine.name}
+                  onChange={(e) => setNewMachine({...newMachine, name: e.target.value})}
+                  className="sm:col-span-3"
+                  placeholder="e.g., Wascher"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                 <Label htmlFor="machine-type" className="sm:text-right">Type</Label>
                 <Select value={newMachine.type} onValueChange={(value: 'washer' | 'dryer') => setNewMachine({...newMachine, type: value})}>
                   <SelectTrigger className="sm:col-span-3">
@@ -288,18 +454,29 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
               {location.dorm === 'all' && (
                 <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                   <Label htmlFor="machine-dorm" className="sm:text-right">Dorm</Label>
-                  <Select value={selectedDorm} onValueChange={setSelectedDorm}>
+                  <Select value={selectedDormId} onValueChange={setSelectedDormId}>
                     <SelectTrigger className="sm:col-span-3">
                       <SelectValue placeholder="Select dorm" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CITIES_AND_DORMS[location.city as keyof typeof CITIES_AND_DORMS]?.map((dorm) => (
-                        <SelectItem key={dorm} value={dorm}>{dorm}</SelectItem>
+                      {dormOptions.map((dorm) => (
+                        <SelectItem key={`${dorm.id}-${dorm.name}`} value={dorm.id}>{dorm.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label htmlFor="machine-serial" className="sm:text-right">Serial Number</Label>
+                <Input
+                  id="machine-serial"
+                  value={newMachine.serialNumber}
+                  onChange={(e) => setNewMachine({...newMachine, serialNumber: e.target.value})}
+                  className="sm:col-span-3"
+                  placeholder="e.g., WM002"
+                />
+              </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                 <Label htmlFor="machine-model" className="sm:text-right">Model</Label>
@@ -311,23 +488,39 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
                   placeholder="e.g., AquaClean Pro 2000"
                 />
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label htmlFor="machine-installation-date" className="sm:text-right">Installation Date</Label>
+                <Input
+                  id="machine-installation-date"
+                  type="date"
+                  value={newMachine.installationDate}
+                  onChange={(e) => setNewMachine({...newMachine, installationDate: e.target.value})}
+                  className="sm:col-span-3"
+                />
+              </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                 <Label htmlFor="machine-status" className="sm:text-right">Status</Label>
-                <Select value={newMachine.status} onValueChange={(value: Machine['status']) => setNewMachine({...newMachine, status: value})}>
+                <Select value={newMachine.status} onValueChange={(value: CreateMachineStatus) => setNewMachine({...newMachine, status: value})}>
                   <SelectTrigger className="sm:col-span-3">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="offline">Offline</SelectItem>
+                    {CREATE_MACHINE_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replaceAll('_', ' ')}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleAddMachine}>Add Machine</Button>
+              <Button onClick={handleAddMachine} disabled={isAddingMachine}>
+                {isAddingMachine && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isAddingMachine ? 'Adding...' : 'Add Machine'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -360,6 +553,14 @@ export function MachineManagement({ location, onMachineClick }: MachineManagemen
       </div>
 
       {/* Machine Grid */}
+      {isLoadingMachines && (
+        <p className="text-sm text-muted-foreground">Loading machines...</p>
+      )}
+
+      {loadError && (
+        <p className="text-sm text-destructive">{loadError}</p>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMachines.map((machine) => (
           <Card 

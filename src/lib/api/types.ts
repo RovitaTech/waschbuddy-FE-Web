@@ -146,9 +146,90 @@ export interface ClientDormsRequest {
   cityId: string;
 }
 
+export interface ClientsOverviewRequest {
+  cityId: string;
+  dormId?: string;
+}
+
+export interface OverviewIssueItem {
+  id?: string;
+  machineId?: string;
+  title?: string;
+  message?: string;
+  issue?: string;
+  severity?: string;
+}
+
+export interface PendingVerificationItem {
+  id?: string;
+  userId?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}
+
+export interface ClientsOverviewResponse {
+  totalMachines: number;
+  activeMachines: number;
+  machinesInUse: number;
+  machinesInMaintenance: number;
+  totalUsers: number;
+  pendingUsers: number;
+  activeUsers: number;
+  recentMachineIssues: OverviewIssueItem[];
+  pendingVerifications: PendingVerificationItem[];
+}
+
 export interface MachineStatusUpdate {
   status: 'available' | 'in_use' | 'maintenance' | 'offline';
   issue?: string;
+}
+
+export interface MachineListFilters {
+  cityId?: string;
+  dormId?: string;
+  status?: string;
+}
+
+export interface ClientMachineResponse {
+  id: string;
+  createdAt?: string;
+  updatedAt?: string;
+  name?: string;
+  type?: number;
+  status?: string;
+  machineNumber?: number;
+  clientId?: string;
+  dormId?: string;
+  serialNumber?: string;
+  model?: string;
+  installationDate?: string;
+  lastMaintenanceDate?: string | null;
+  maintenanceScheduled?: boolean;
+  scheduledWindow?: string | null;
+  queueCount?: number;
+  usersInQueue?: unknown[];
+  isReserved?: boolean;
+  currentReservation?: unknown;
+}
+
+export type CreateMachineStatus =
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'MAINTENANCE'
+  | 'RESERVED'
+  | 'OUT_OF_ORDER'
+  | 'OFFLINE';
+
+export interface CreateMachineRequest {
+  name: string;
+  type: 0 | 1;
+  status: CreateMachineStatus;
+  dormId: string;
+  serialNumber: string;
+  model: string;
+  installationDate: string;
 }
 
 export interface UserApprovalRequest {

@@ -33,6 +33,7 @@ export const ENDPOINTS = {
     DELETE_MULTIPLE_DORMS: '/super-admin/clients/dorms/multiple',
   },
   OVERVIEW: {
+    CLIENTS_OVERVIEW: '/clients/overview',
     CITIES: '/clients/cities',
     DORMS: '/clients/dorms',
     DORM_DETAIL: '/clients/dorm/detail',
@@ -41,7 +42,7 @@ export const ENDPOINTS = {
     DORMS_DATA: '/clients/dorms/data',
   },
   MACHINES: {
-    ALL: '/clients/machines/all',
+    ALL: '/clients/machines',
     ADD: '/clients/machines',
     BY_DORM: '/clients/machines/by-dorm',
     DETAIL: '/clients/machines/detail',

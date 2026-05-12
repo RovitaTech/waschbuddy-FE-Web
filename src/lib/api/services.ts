@@ -20,11 +20,16 @@ import {
   ClientDorm,
   ClientDormApiResponse,
   ClientDormsRequest,
+  ClientsOverviewRequest,
+  ClientsOverviewResponse,
   Country,
   CreateCountryRequest,
   CreateDormRequest,
   LoginRequest,
   LoginResponse,
+  MachineListFilters,
+  ClientMachineResponse,
+  CreateMachineRequest,
   MachineStatusUpdate,
   SignupRequest,
   UserApprovalRequest,
@@ -252,6 +257,13 @@ export const overviewService = {
       .filter((dorm) => dorm.id && dorm.name);
   },
 
+  getClientsOverview: async (body: ClientsOverviewRequest): Promise<ClientsOverviewResponse> => {
+    return apiRequest<ClientsOverviewResponse>(ENDPOINTS.OVERVIEW.CLIENTS_OVERVIEW, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
   getDormDetail: async (body: object): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.OVERVIEW.DORM_DETAIL, {
       method: 'POST',
@@ -287,6 +299,21 @@ export const machineService = {
     return apiRequest<Machine[]>(ENDPOINTS.MACHINES.ALL);
   },
 
+  getMachines: async (filters?: MachineListFilters): Promise<ClientMachineResponse[]> => {
+    const params = new URLSearchParams();
+
+    if (filters?.cityId) params.append('cityId', filters.cityId);
+    if (filters?.dormId) params.append('dormId', filters.dormId);
+    if (filters?.status) params.append('status', filters.status);
+
+    const queryString = params.toString();
+    const endpoint = queryString
+      ? `${ENDPOINTS.MACHINES.ALL}?${queryString}`
+      : ENDPOINTS.MACHINES.ALL;
+
+    return apiRequest<ClientMachineResponse[]>(endpoint);
+  },
+
   getMachinesByDorm: async (body: object): Promise<Machine[]> => {
     return apiRequest<Machine[]>(ENDPOINTS.MACHINES.BY_DORM, {
       method: 'POST',
@@ -301,8 +328,8 @@ export const machineService = {
     });
   },
 
-  addMachine: async (machine: Omit<Machine, 'id'>): Promise<Machine> => {
-    return apiRequest<Machine>(ENDPOINTS.MACHINES.ADD, {
+  addMachine: async (machine: CreateMachineRequest): Promise<ClientMachineResponse> => {
+    return apiRequest<ClientMachineResponse>(ENDPOINTS.MACHINES.ADD, {
       method: 'POST',
       body: JSON.stringify(machine)
     });
