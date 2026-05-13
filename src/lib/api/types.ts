@@ -182,7 +182,18 @@ export interface ClientsOverviewResponse {
 }
 
 export interface MachineStatusUpdate {
-  status: 'available' | 'in_use' | 'maintenance' | 'offline';
+  status: 'available' | 'in_use' | 'maintenance' | 'out_of_order' | 'offline';
+  issue?: string;
+}
+
+export interface MachineUpdateRequest {
+  name?: string;
+  type?: 0 | 1;
+  status?: 'ACTIVE' | 'INACTIVE' | 'RESERVED' | 'MAINTENANCE' | 'OUT_OF_ORDER' | 'OFFLINE';
+  serialNumber?: string;
+  model?: string;
+  installationDate?: string;
+  dormId?: string;
   issue?: string;
 }
 

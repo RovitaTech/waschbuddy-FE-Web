@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Badge } from '../../ui/badge';
 import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Skeleton } from '../../ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../ui/alert-dialog';
@@ -28,7 +29,7 @@ import {
 } from 'lucide-react';
 import { filterDataByLocation, mockMachines } from '@/dummy-data';
 import { machineService, overviewService } from '@/lib/api';
-import { ClientMachineResponse, ClientDorm, CreateMachineStatus } from '@/lib/api/types';
+import { ClientMachineResponse, ClientDorm, CreateMachineStatus, MachineStatusUpdate } from '@/lib/api/types';
 import { ApiHttpError } from '@/lib/api';
 import { Machine } from '@/types';
 import { Location } from '@/types';
@@ -37,7 +38,7 @@ import { toast } from 'sonner';
 
 interface MachineManagementProps {
   location: Location;
-  initialStatusFilter?: 'all' | 'available' | 'in_use' | 'maintenance' | 'offline';
+  initialStatusFilter?: 'all' | 'available' | 'in_use' | 'maintenance' | 'out_of_order' | 'offline';
   onMachineClick?: (machineId: string) => void;
 }
 
@@ -52,9 +53,10 @@ const mapApiStatusToUiStatus = (status?: string): Machine['status'] => {
     case 'RESERVED':
     case 'IN_USE':
       return 'in_use';
-    case 'OUT_OF_ORDER':
     case 'MAINTENANCE':
       return 'maintenance';
+    case 'OUT_OF_ORDER':
+      return 'out_of_order';
     case 'INACTIVE':
     case 'OFFLINE':
       return 'offline';
@@ -69,6 +71,8 @@ const mapUiStatusToApiStatus = (status: string): CreateMachineStatus | undefined
       return 'RESERVED';
     case 'maintenance':
       return 'MAINTENANCE';
+    case 'out_of_order':
+      return 'OUT_OF_ORDER';
     case 'offline':
       return 'OFFLINE';
     case 'available':
@@ -89,6 +93,19 @@ const mapApiMachineToUiMachine = (machine: ClientMachineResponse, location: Loca
     location: machine.dormId ?? location.dorm,
     dorm: location.dorm === 'all' ? (machine.dormId ?? 'Unknown dorm') : location.dorm,
     city: location.city,
+    machineNumber: machine.machineNumber,
+    serialNumber: machine.serialNumber,
+    installationDate: machine.installationDate,
+    clientId: machine.clientId,
+    dormId: machine.dormId,
+    createdAt: machine.createdAt,
+    updatedAt: machine.updatedAt,
+    lastMaintenanceDate: machine.lastMaintenanceDate,
+    maintenanceScheduled: machine.maintenanceScheduled,
+    scheduledWindow: machine.scheduledWindow,
+    queueCount: machine.queueCount,
+    isReserved: machine.isReserved,
+    currentReservation: machine.currentReservation,
     lastMaintenance: machine.lastMaintenanceDate ?? machine.updatedAt ?? machine.createdAt ?? new Date().toISOString(),
     totalCycles: 0,
     model: machine.model ?? 'Unknown model'
@@ -225,6 +242,8 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
       case 'in_use':
         return 'secondary';
       case 'maintenance':
+        return 'outline';
+      case 'out_of_order':
         return 'destructive';
       case 'offline':
         return 'outline';
@@ -240,6 +259,8 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
       case 'in_use':
         return 'border-blue-500 border';
       case 'maintenance':
+        return 'border-yellow-500 border';
+      case 'out_of_order':
         return 'border-red-500 border';
       case 'offline':
         return 'border-gray-500 border';
@@ -255,6 +276,8 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
       case 'in_use':
         return { borderColor: '#3b82f6', borderWidth: '1px' };
       case 'maintenance':
+        return { borderColor: '#eab308', borderWidth: '1px' };
+      case 'out_of_order':
         return { borderColor: '#ef4444', borderWidth: '1px' };
       case 'offline':
         return { borderColor: '#6b7280', borderWidth: '1px' };
@@ -270,6 +293,8 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
       case 'in_use':
         return <Clock className="h-4 w-4" />;
       case 'maintenance':
+        return <Settings className="h-4 w-4" />;
+      case 'out_of_order':
         return <AlertTriangle className="h-4 w-4" />;
       case 'offline':
         return <WifiOff className="h-4 w-4" />;
@@ -377,31 +402,67 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
     }
   };
 
-  const handleDeleteMachine = (machineId: string) => {
-    // Remove from both local state and global storage
-    setMachines(machines.filter(machine => machine.id !== machineId));
-    globalAddedMachines = globalAddedMachines.filter(machine => machine.id !== machineId);
-    toast.success('Machine deleted successfully');
+  const handleDeleteMachine = async (machineId: string) => {
+    try {
+      await machineService.deleteMachine(machineId);
+      // Remove from both local state and global storage
+      setMachines((current) => current.filter(machine => machine.id !== machineId));
+      globalAddedMachines = globalAddedMachines.filter(machine => machine.id !== machineId);
+      toast.success('Machine deleted successfully');
+      // notify others (overview) in case they want to refresh without reloading
+      try {
+        window.dispatchEvent(new CustomEvent('machine:deleted', { detail: machineId }));
+      } catch {
+        // ignore
+      }
+    } catch (err) {
+      toast.error('Failed to delete machine');
+    }
   };
 
+  // Listen for deletions triggered from other parts of the app (e.g. detail view)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const id = (e as CustomEvent).detail as string | undefined;
+      if (!id) return;
+      setMachines((current) => current.filter(m => m.id !== id));
+      globalAddedMachines = globalAddedMachines.filter(m => m.id !== id);
+      toast.success('Machine deleted');
+    };
+
+    window.addEventListener('machine:deleted', handler as EventListener);
+    return () => window.removeEventListener('machine:deleted', handler as EventListener);
+  }, []);
+
   const handleStatusChange = (machineId: string, newStatus: Machine['status']) => {
-    const updateMachine = (machine: Machine) => 
-      machine.id === machineId 
-        ? { 
-            ...machine, 
-            status: newStatus, 
-            ...(newStatus !== 'in_use' && { currentUser: undefined, timeRemaining: undefined }) 
+    const updateMachine = (machine: Machine) =>
+      machine.id === machineId
+        ? {
+            ...machine,
+            status: newStatus,
+            ...(newStatus !== 'in_use' && { currentUser: undefined, timeRemaining: undefined })
           }
         : machine;
 
-    // Update local state
-    setMachines(machines.map(updateMachine));
-    
-    // Update global storage if machine is there
-    globalAddedMachines = globalAddedMachines.map(updateMachine);
-    
-    toast.success('Machine status updated');
+    const apiStatus = mapUiStatusToApiStatus(newStatus);
+    if (!apiStatus) {
+      toast.error('Unsupported machine status');
+      return;
+    }
+
+    void (async () => {
+      try {
+        await machineService.updateMachine(machineId, { status: apiStatus } as MachineStatusUpdate);
+        setMachines((current) => current.map(updateMachine));
+        globalAddedMachines = globalAddedMachines.map(updateMachine);
+        toast.success('Machine status updated');
+      } catch {
+        toast.error('Failed to update machine status');
+      }
+    })();
   };
+
+  const loadingCardCount = 6;
 
   return (
     <div className="space-y-6">
@@ -547,6 +608,7 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
             <SelectItem value="available">Available</SelectItem>
             <SelectItem value="in_use">In Use</SelectItem>
             <SelectItem value="maintenance">Maintenance</SelectItem>
+            <SelectItem value="out_of_order">Out of Order</SelectItem>
             <SelectItem value="offline">Offline</SelectItem>
           </SelectContent>
         </Select>
@@ -554,7 +616,36 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
 
       {/* Machine Grid */}
       {isLoadingMachines && (
-        <p className="text-sm text-muted-foreground">Loading machines...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: loadingCardCount }).map((_, index) => (
+            <Card key={index} className="relative overflow-hidden border-muted/60">
+              <CardHeader className="pb-3 space-y-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-40" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-7 w-20 rounded-full" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Skeleton className="h-10 flex-1 rounded-md" />
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
       {loadError && (
@@ -587,7 +678,8 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
                   className={`flex items-center gap-1 font-semibold ${
                     machine.status === 'available' ? 'bg-green-100 text-green-800' :
                     machine.status === 'in_use' ? 'bg-blue-100 text-blue-800' :
-                    machine.status === 'maintenance' ? 'bg-red-100 text-red-800' :
+                    machine.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                    machine.status === 'out_of_order' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
                   }`}
                 >
@@ -627,6 +719,7 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
                       <SelectItem value="available">Available</SelectItem>
                       <SelectItem value="in_use">In Use</SelectItem>
                       <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="out_of_order">Out of Order</SelectItem>
                       <SelectItem value="offline">Offline</SelectItem>
                     </SelectContent>
                   </Select>
@@ -643,32 +736,7 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
                   <Edit className="h-4 w-4" />
                 </Button>
                 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-red-600 hover:text-red-700"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Machine</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {machine.name}? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDeleteMachine(machine.id)} className="bg-red-600 hover:bg-red-700">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                {/* Delete moved to detail dialog — removed inline delete button */}
               </div>
             </CardContent>
           </Card>
@@ -703,7 +771,8 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
                     className={`text-lg px-4 py-2 ${
                       selectedMachine.status === 'available' ? 'bg-green-100 text-green-800' :
                       selectedMachine.status === 'in_use' ? 'bg-blue-100 text-blue-800' :
-                      selectedMachine.status === 'maintenance' ? 'bg-red-100 text-red-800' :
+                      selectedMachine.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedMachine.status === 'out_of_order' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`}
                   >

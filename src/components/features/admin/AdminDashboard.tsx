@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Skeleton } from '../../ui/skeleton';
+import Shimmer from '../../ui/shimmer';
 import { MachineManagement } from '../machines/MachineManagement';
 import { UserManagement } from '../users/UserManagement';
 import { ReservationManagement } from '../reservations/ReservationManagement';
@@ -107,6 +109,31 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
       isActive = false;
     };
   }, [activeTab, location.cityId, location.dormId]);
+
+  // Refresh overview when a machine is deleted elsewhere in the app
+  useEffect(() => {
+    const onMachineDeleted = async (e: Event) => {
+      const id = (e as CustomEvent).detail as string | undefined;
+      if (!location.cityId) return;
+      setIsLoadingOverview(true);
+      setOverviewError(null);
+      try {
+        const response = await overviewService.getClientsOverview({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {})
+        });
+        setOverviewData(response);
+      } catch {
+        setOverviewData(null);
+        setOverviewError('Unable to load overview data.');
+      } finally {
+        setIsLoadingOverview(false);
+      }
+    };
+
+    window.addEventListener('machine:deleted', onMachineDeleted as EventListener);
+    return () => window.removeEventListener('machine:deleted', onMachineDeleted as EventListener);
+  }, [location.cityId, location.dormId]);
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
@@ -378,6 +405,38 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                 onBack={handleBackFromMachine}
                 accessType={machineAccessType}
               />
+            ) : activeTab === 'overview' && isLoadingOverview ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="h-20 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="h-48 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-48 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                </div>
+              </div>
             ) : (
               <Tabs value={activeTab} className="space-y-6">
               {/* Overview Tab */}
@@ -386,7 +445,22 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                 <h2 className="text-2xl mb-6">Dashboard Overview</h2>
 
                 {isLoadingOverview && (
-                  <p className="text-sm text-muted-foreground mb-4">Loading overview data...</p>
+                  <div className="mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {overviewError && (
@@ -456,8 +530,8 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                       <CardDescription>Machines requiring attention</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        {recentMachineIssues.slice(0, 2).map((issue, index) => (
+                      <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+                        {recentMachineIssues.map((issue, index) => (
                           <div 
                             key={issue.id ?? issue.machineId ?? `${index}`}
                             className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg cursor-pointer hover:bg-destructive/20 transition-colors"

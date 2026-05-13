@@ -30,6 +30,7 @@ import {
   MachineListFilters,
   ClientMachineResponse,
   CreateMachineRequest,
+  MachineUpdateRequest,
   MachineStatusUpdate,
   SignupRequest,
   UserApprovalRequest,
@@ -155,8 +156,23 @@ export const superAdminService = {
     return apiRequest<any[]>(ENDPOINTS.SUPER_ADMIN.ALL_USERS);
   },
 
-  getUsersStats: async (): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.USERS_STATS);
+  getUsersStats: async (filters?: { cityId?: string; dormUUID?: string } & Record<string, string | undefined>): Promise<any> => {
+    const params = new URLSearchParams();
+
+    const cityId = filters?.cityId ?? filters?.city ?? filters?.city_id;
+    const dormUUID = filters?.dormUUID ?? filters?.dorm ?? filters?.dormId ?? filters?.dorm_id;
+
+    if (cityId) params.append('cityId', cityId);
+    if (dormUUID) {
+      // send both keys to be compatible with API that may expect either name
+      params.append('dormUUID', dormUUID);
+      params.append('dormId', dormUUID);
+    }
+
+    const queryString = params.toString();
+    const endpoint = queryString ? `${ENDPOINTS.SUPER_ADMIN.USERS_STATS}?${queryString}` : ENDPOINTS.SUPER_ADMIN.USERS_STATS;
+
+    return apiRequest<any>(endpoint);
   },
 
   getAllClients: async (): Promise<any[]> => {
@@ -335,8 +351,8 @@ export const machineService = {
     });
   },
 
-  updateMachine: async (id: string, update: MachineStatusUpdate): Promise<Machine> => {
-    return apiRequest<Machine>(ENDPOINTS.MACHINES.UPDATE(id), {
+  updateMachine: async (id: string, update: MachineStatusUpdate | MachineUpdateRequest): Promise<ClientMachineResponse> => {
+    return apiRequest<ClientMachineResponse>(ENDPOINTS.MACHINES.UPDATE(id), {
       method: 'PUT',
       body: JSON.stringify(update)
     });
@@ -351,9 +367,11 @@ export const machineService = {
 
 // User Management Services
 export const userService = {
-  getUsers: async (filters?: FilterParams & PaginationParams): Promise<PaginatedResponse<User>> => {
+  getUsers: async (filters?: FilterParams & PaginationParams): Promise<any> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
+    if ((filters as any)?.cityId) params.append('cityId', (filters as any).cityId);
+    if ((filters as any)?.dormId) params.append('dormId', (filters as any).dormId);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
     if (filters?.search) params.append('search', filters.search);
@@ -363,15 +381,75 @@ export const userService = {
       ? `${ENDPOINTS.USER_MANAGEMENT.USERS}?${queryString}`
       : ENDPOINTS.USER_MANAGEMENT.USERS;
 
-    return apiRequest<PaginatedResponse<User>>(endpoint);
+    const response = await apiRequest<any>(endpoint);
+    
+    // Handle the response structure - API returns { data: [...], meta: {...} }
+    if (response && typeof response === 'object') {
+      return response;
+    }
+    
+    return response;
   },
 
-  getUsersStats: async (): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.USER_MANAGEMENT.USERS_STATS);
+  getUsersStats: async (filters?: { cityId?: string; dormUUID?: string } & Record<string, string | undefined>): Promise<any> => {
+    const params = new URLSearchParams();
+
+    // Accept various possible keys coming from UI/hooks: prefer explicit cityId/dormUUID,
+    // fall back to common names like `city` or `dorm` if present.
+    const cityId = filters?.cityId ?? filters?.city ?? filters?.city_id;
+    const dormUUID = filters?.dormUUID ?? filters?.dorm ?? filters?.dormId ?? filters?.dorm_id;
+
+    if (cityId) params.append('cityId', cityId);
+    if (dormUUID) {
+      // send both keys to be compatible with API that may expect either name
+      params.append('dormUUID', dormUUID);
+      params.append('dormId', dormUUID);
+    }
+
+    const queryString = params.toString();
+    const endpoint = queryString ? `${ENDPOINTS.USER_MANAGEMENT.USERS_STATS}?${queryString}` : ENDPOINTS.USER_MANAGEMENT.USERS_STATS;
+
+    return apiRequest<any>(endpoint);
   },
 
   getProfileChangeRequests: async (): Promise<any[]> => {
     return apiRequest<any[]>(ENDPOINTS.USER_MANAGEMENT.PROFILE_CHANGE_REQUESTS);
+  },
+
+  // User action endpoints (suspend, approve, reactivate, delete, send-email)
+  deleteUser: async (userId: string): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.USER_MANAGEMENT.DELETE_USER, {
+      method: 'DELETE',
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  suspendUser: async (userId: string): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.PROFILE_REQUESTS.SUSPEND, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  approveUser: async (userId: string): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.PROFILE_REQUESTS.APPROVE, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  reactivateUser: async (userId: string): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.PROFILE_REQUESTS.REACTIVATE, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  sendEmail: async (payload: { userId: string; subject: string; body: string }): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.USER_MANAGEMENT.SEND_EMAIL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   getProfileChangeRequestsStats: async (): Promise<any> => {
@@ -384,13 +462,7 @@ export const userService = {
       body: JSON.stringify(body)
     });
   },
-
-  deleteUser: async (body: object): Promise<void> => {
-    return apiRequest<void>(ENDPOINTS.USER_MANAGEMENT.DELETE_USER, {
-      method: 'DELETE',
-      body: JSON.stringify(body)
-    });
-  }
+  
 };
 
 // Reservation Services
@@ -480,12 +552,7 @@ export const profileRequestService = {
     });
   },
 
-  sendEmail: async (body: object): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.PROFILE_REQUESTS.SEND_EMAIL, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-  }
+  
 };
 
 // User Query Services

@@ -56,6 +56,7 @@ export const ENDPOINTS = {
     PROFILE_CHANGE_REQUESTS_STATS: '/clients/user-management/profile-change-requests/stats',
     APPROVE_REJECT_REQUEST: '/clients/user-management/profile-change-requests/approve-reject',
     DELETE_USER: '/clients/user-management/users',
+    SEND_EMAIL: '/clients/user-management/send-email',
   },
   RESERVATIONS: {
     ALL: '/clients/reservations',
