@@ -151,6 +151,20 @@ export interface ClientsOverviewRequest {
   dormId?: string;
 }
 
+export interface ReservationStatsRequest {
+  cityId: string;
+  dormId?: string;
+}
+
+export interface ReservationStatsResponse {
+  active: number;
+  inQueue: number;
+  inUse: number;
+  expired: number;
+  completed: number;
+  cancelled: number;
+}
+
 export interface OverviewIssueItem {
   id?: string;
   machineId?: string;

@@ -38,6 +38,7 @@ import {
   DormWithLocation,
   PaginatedResponse
 } from './types';
+import type { ReservationStatsRequest, ReservationStatsResponse } from './types';
 
 const buildQueryString = (params: Record<string, string | undefined>): string => {
   const searchParams = new URLSearchParams();
@@ -467,11 +468,13 @@ export const userService = {
 
 // Reservation Services
 export const reservationService = {
-  getReservations: async (filters?: FilterParams): Promise<Reservation[]> => {
+  getReservations: async (filters?: FilterParams & { cityId?: string; dormId?: string }): Promise<Reservation[]> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.cityId) params.append('cityId', filters.cityId);
+    if (filters?.dormId) params.append('dormId', filters.dormId);
 
     const queryString = params.toString();
     const endpoint = queryString
@@ -481,8 +484,13 @@ export const reservationService = {
     return apiRequest<Reservation[]>(endpoint);
   },
 
-  getReservationStats: async (): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.RESERVATIONS.STATS);
+  getReservationStats: async (filters?: ReservationStatsRequest): Promise<ReservationStatsResponse> => {
+    const queryString = buildQueryString({
+      cityId: filters?.cityId,
+      dormId: filters?.dormId,
+    });
+
+    return apiRequest<ReservationStatsResponse>(`${ENDPOINTS.RESERVATIONS.STATS}${queryString}`);
   },
 
   cancelReservation: async (reservationId: string): Promise<void> => {
@@ -499,8 +507,13 @@ export const reservationService = {
     });
   },
 
-  getAllQueues: async (): Promise<any[]> => {
-    return apiRequest<any[]>(ENDPOINTS.RESERVATIONS.ALL_QUEUES);
+  getAllQueues: async (filters?: { cityId?: string; dormId?: string }): Promise<any[]> => {
+    const queryString = buildQueryString({
+      cityId: filters?.cityId,
+      dormId: filters?.dormId,
+    });
+
+    return apiRequest<any[]>(`${ENDPOINTS.RESERVATIONS.ALL_QUEUES}${queryString}`);
   },
 
   cancelQueue: async (queueId: string): Promise<void> => {

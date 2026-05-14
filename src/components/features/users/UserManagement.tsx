@@ -297,13 +297,19 @@ export function UserManagement({ location }: UserManagementProps) {
     }
   };
 
-  const stats = statsFromApi;
+  const stats = {
+    total: statsFromApi.total ?? 0,
+    active: statsFromApi.active ?? 0,
+    pending: statsFromApi.pending ?? 0,
+    suspended: statsFromApi.suspended ?? 0,
+    rejected: statsFromApi.rejected ?? 0,
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
+        <h1 className="text-2xl font-normal mb-6">User Management</h1>
         <p className="text-muted-foreground">
           {location.dorm === 'all'
             ? `Manage users across all dorms in ${location.city}`
@@ -329,7 +335,7 @@ export function UserManagement({ location }: UserManagementProps) {
                 <UserCheck className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.total}</div>
+                <div className="text-2xl">{stats.total}</div>
               </CardContent>
             </Card>
 
@@ -339,7 +345,7 @@ export function UserManagement({ location }: UserManagementProps) {
                 <CheckCircle className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.active}</div>
+                <div className="text-2xl">{stats.active}</div>
               </CardContent>
             </Card>
 
@@ -349,7 +355,7 @@ export function UserManagement({ location }: UserManagementProps) {
                 <AlertCircle className="h-4 w-4 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pending}</div>
+                <div className="text-2xl">{stats.pending}</div>
               </CardContent>
             </Card>
 
@@ -359,7 +365,7 @@ export function UserManagement({ location }: UserManagementProps) {
                 <UserMinus className="h-4 w-4 text-yellow-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.suspended}</div>
+                <div className="text-2xl">{stats.suspended}</div>
               </CardContent>
             </Card>
 
@@ -369,7 +375,7 @@ export function UserManagement({ location }: UserManagementProps) {
                 <XCircle className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.rejected}</div>
+                <div className="text-2xl">{stats.rejected}</div>
               </CardContent>
             </Card>
           </>

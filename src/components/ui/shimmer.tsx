@@ -5,7 +5,7 @@ export default function Shimmer({ className = '', style = {} }: { className?: st
         .shimmer-root {
           position: relative;
           overflow: hidden;
-          background: linear-gradient(90deg, #f3f4f6, #e9eef5);
+          background: linear-gradient(90deg, var(--muted), var(--accent));
           border-radius: 8px;
         }
         .shimmer-root::after {
@@ -15,9 +15,12 @@ export default function Shimmer({ className = '', style = {} }: { className?: st
           left: -150%;
           height: 100%;
           width: 200%;
-          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 100%);
           transform: skewX(-10deg);
           animation: shimmer-move 1.2s ease-in-out infinite;
+        }
+        :global(.dark) .shimmer-root::after {
+          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0) 100%);
         }
         @keyframes shimmer-move {
           0% { transform: translateX(-150%) skewX(-10deg); }
