@@ -36,7 +36,10 @@ import {
   UserApprovalRequest,
   QueryResponseRequest,
   DormWithLocation,
-  PaginatedResponse
+  PaginatedResponse,
+  UserQueryApiItem,
+  UserQueryFilters,
+  UserQueryStatsResponse
 } from './types';
 import type { ReservationStatsRequest, ReservationStatsResponse } from './types';
 
@@ -570,20 +573,24 @@ export const profileRequestService = {
 
 // User Query Services
 export const queryService = {
-  getQueries: async (filters?: FilterParams): Promise<UserQuery[]> => {
-    const params = new URLSearchParams();
-    if (filters?.status) params.append('status', filters.status);
+  getQueries: async (filters?: UserQueryFilters): Promise<UserQueryApiItem[]> => {
+    const queryString = buildQueryString({
+      cityId: filters?.cityId,
+      dormId: filters?.dormId,
+      status: filters?.status,
+    });
 
-    const queryString = params.toString();
-    const endpoint = queryString
-      ? `${ENDPOINTS.USER_QUERIES.ALL}?${queryString}`
-      : ENDPOINTS.USER_QUERIES.ALL;
-
-    return apiRequest<UserQuery[]>(endpoint);
+    const response = await apiRequest<unknown>(`${ENDPOINTS.USER_QUERIES.ALL}${queryString}`);
+    return extractList<UserQueryApiItem>(response, ['queries']);
   },
 
-  getQueriesStats: async (): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.USER_QUERIES.STATS);
+  getQueriesStats: async (filters?: Pick<UserQueryFilters, 'cityId' | 'dormId'>): Promise<UserQueryStatsResponse> => {
+    const queryString = buildQueryString({
+      cityId: filters?.cityId,
+      dormId: filters?.dormId,
+    });
+
+    return apiRequest<UserQueryStatsResponse>(`${ENDPOINTS.USER_QUERIES.STATS}${queryString}`);
   },
 
   getQueryById: async (id: string): Promise<UserQuery> => {
@@ -591,24 +598,42 @@ export const queryService = {
   },
 
   replyToQuery: async (id: string, body: QueryResponseRequest): Promise<UserQuery> => {
+    const payload: Record<string, unknown> = { ...body } as Record<string, unknown>;
+
+    // Normalize status to numeric codes if provided as strings
+    if (payload.status !== undefined) {
+      const s = String(payload.status).toLowerCase();
+      if (s === 'resolved' || s === '2') payload.status = 2;
+      else if (s === 'in_progress' || s === 'inprogress' || s === '1') payload.status = 1;
+      else payload.status = 0;
+    }
+
+    if (payload.priority !== undefined) {
+      const p = String(payload.priority).toLowerCase();
+      if (p === 'high' || p === '2') payload.priority = 2;
+      else if (p === 'medium' || p === '1') payload.priority = 1;
+      else payload.priority = 0;
+    }
+
     return apiRequest<UserQuery>(ENDPOINTS.USER_QUERIES.REPLY, {
       method: 'POST',
-      body: JSON.stringify({ ...body, queryId: id })
+      body: JSON.stringify({ ...payload, queryId: id })
     });
   },
 
   updateQueryStatus: async (id: string, body: object): Promise<UserQuery> => {
-    return apiRequest<UserQuery>(ENDPOINTS.USER_QUERIES.UPDATE_STATUS, {
+    return apiRequest<UserQuery>(ENDPOINTS.USER_QUERIES.BY_ID(id), {
       method: 'PATCH',
-      body: JSON.stringify({ ...body, queryId: id })
+      body: JSON.stringify(body)
     });
   }
 };
 
 // Settings Services
 export const settingsService = {
-  getAllSettings: async (): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SETTINGS.GET_ALL);
+  getAllSettings: async (cityId?: string, dormId?: string): Promise<any> => {
+    const queryString = buildQueryString({ cityId, dormId });
+    return apiRequest<any>(`${ENDPOINTS.SETTINGS.GET_ALL}${queryString}`);
   },
 
   updateAllDorms: async (body: object): Promise<any> => {
@@ -618,8 +643,11 @@ export const settingsService = {
     });
   },
 
-  resetSettings: async (): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SETTINGS.RESET, { method: 'POST' });
+  resetSettings: async (body?: { cityId?: string; dormIds?: string[] }): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.SETTINGS.RESET, {
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined
+    });
   },
 
   getDormSettings: async (dormId: string): Promise<any> => {
@@ -653,6 +681,13 @@ export const settingsService = {
   addSystemMessage: async (body: object): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.SETTINGS.SYSTEM_MESSAGES, {
       method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
+  updateSystemMessage: async (body: object): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.SETTINGS.SYSTEM_MESSAGES, {
+      method: 'PUT',
       body: JSON.stringify(body)
     });
   }

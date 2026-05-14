@@ -369,13 +369,6 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                   Reservations
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="profile-requests" 
-                  className={`justify-start w-full text-foreground relative ${activeTab === 'profile-requests' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Profile Requests
-                </TabsTrigger>
-                <TabsTrigger 
                   value="queries" 
                   className={`justify-start w-full text-foreground relative ${activeTab === 'queries' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >

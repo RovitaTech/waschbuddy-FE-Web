@@ -266,3 +266,38 @@ export interface QueryResponseRequest {
   response: string;
   status: 'resolved' | 'in_progress';
 }
+
+export interface UserQueryFilters {
+  cityId?: string;
+  dormId?: string;
+  status?: string;
+}
+
+export interface UserQueryStatsResponse {
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+  highPriority: number;
+}
+
+export interface UserQueryApiItem {
+  id?: string;
+  queryId?: string;
+  userId?: string;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  subject?: string;
+  message?: string;
+  status?: 'open' | 'resolved' | 'in_progress' | string;
+  priority?: 'low' | 'medium' | 'high' | string;
+  submittedAt?: string;
+  resolvedAt?: string;
+  adminResponse?: string;
+  city?: string;
+  cityName?: string;
+  dorm?: string;
+  dormName?: string;
+}
