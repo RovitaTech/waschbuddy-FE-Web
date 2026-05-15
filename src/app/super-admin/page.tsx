@@ -4,10 +4,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLogin } from '@/components/features/auth/AdminLogin';
 import { useAuth } from '@/hooks/useAuth';
-import type { AuthCredentials } from '@/types';
 import { getStoredAuthUser } from '@/lib/api/authToken';
+import type { AuthCredentials } from '@/types';
 
-export default function AdminPage() {
+export default function SuperAdminPage() {
   const router = useRouter();
   const { login } = useAuth();
 
@@ -33,7 +33,5 @@ export default function AdminPage() {
     }
   };
 
-  return (
-    <AdminLogin onLogin={handleLogin} />
-  );
+  return <AdminLogin onLogin={handleLogin} />;
 }

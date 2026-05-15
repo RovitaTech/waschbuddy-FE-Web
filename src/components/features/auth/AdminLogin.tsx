@@ -1,23 +1,26 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Checkbox } from '../../ui/checkbox';
+import { Switch } from '../../ui/switch';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import Image from 'next/image';
 import { setStoredDataSource } from '@/lib/config/dataSource';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getApiBaseUrl } from '@/lib/config/environment';
+import type { AuthCredentials } from '@/types';
 
 interface AdminLoginProps {
-  onLogin: (credentials: { email: string; password: string }) => Promise<void> | void;
+  onLogin: (credentials: AuthCredentials) => Promise<void> | void;
 }
 
 export function AdminLogin({ onLogin }: AdminLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'forgot'>('login');
@@ -34,7 +37,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
 
     try {
       setStoredDataSource('api');
-      await onLogin({ email, password });
+      await onLogin({ email, password, isSuperAdmin });
     } catch {
       setError('Invalid email or password. Please try again.');
     } finally {
@@ -143,6 +146,21 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
                   >
                     Forgot password?
                   </button>
+                </div>
+
+                <div className="py-2">
+                  <div className="flex items-center justify-between rounded-md bg-slate-50 border border-slate-100 p-3">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="super-admin"
+                        checked={isSuperAdmin}
+                        onCheckedChange={(checked) => setIsSuperAdmin(checked === true)}
+                      />
+                      <Label htmlFor="super-admin" className="text-sm font-medium text-slate-700 cursor-pointer">
+                        Super admin
+                      </Label>
+                    </div>
+                  </div>
                 </div>
 
                 {error && (

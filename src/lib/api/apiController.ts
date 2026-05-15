@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '@/lib/config/environment';
+import type { ApiRequestOptions } from './types';
 import { apiFetch } from './index';
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -57,7 +58,7 @@ const now = (): number => {
 
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {},
+  options: ApiRequestOptions = {},
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const method = options.method ?? 'GET';

@@ -22,6 +22,7 @@ import {
   ClientDormsRequest,
   ClientsOverviewRequest,
   ClientsOverviewResponse,
+  CreateClientRequest,
   Country,
   CreateCountryRequest,
   CreateDormRequest,
@@ -183,6 +184,13 @@ export const superAdminService = {
     return apiRequest<any[]>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS);
   },
 
+  createClient: async (body: CreateClientRequest): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
   getClientById: async (id: string): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.CLIENT_BY_ID(id));
   },
@@ -195,7 +203,9 @@ export const superAdminService = {
   },
 
   getCountries: async (): Promise<Country[]> => {
-    return apiRequest<Country[]>(ENDPOINTS.SUPER_ADMIN.COUNTRIES);
+    return apiRequest<Country[]>(ENDPOINTS.SUPER_ADMIN.COUNTRIES, {
+      skipAuth: true,
+    });
   },
 
   addCountry: async (body: CreateCountryRequest): Promise<Country> => {

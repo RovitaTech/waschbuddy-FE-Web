@@ -1,10 +1,13 @@
 // API index file - central export for all API functions
 // This makes it easy to import all API functions from one place
 
-export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-	const headers = new Headers(init.headers ?? {});
+import type { ApiRequestOptions } from './types';
 
-	if (typeof window !== 'undefined') {
+export async function apiFetch(input: RequestInfo | URL, init: ApiRequestOptions = {}): Promise<Response> {
+	const { skipAuth, ...fetchInit } = init;
+	const headers = new Headers(fetchInit.headers ?? {});
+
+	if (!skipAuth && typeof window !== 'undefined') {
 		const authToken = window.localStorage.getItem('authToken');
 		if (authToken && !headers.has('Authorization')) {
 			headers.set('Authorization', `Bearer ${authToken}`);
@@ -13,7 +16,7 @@ export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {})
 	}
 
 	const response = await fetch(input, {
-		...init,
+		...fetchInit,
 		headers,
 	});
 
