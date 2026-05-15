@@ -100,6 +100,11 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
     new Set(reservations.map(r => r.machineId).filter(Boolean))
   ).sort();
   const machines = uniqueMachines.length > 0 ? uniqueMachines : [...reservationMachineIds];
+  const machineDisplayNames = new Map(
+    reservations
+      .filter((reservation) => reservation.machineId && reservation.machineName)
+      .map((reservation) => [reservation.machineId, reservation.machineName] as const)
+  );
 
   const normalizeReservationStatus = (status?: string): Reservation['status'] => {
     switch ((status ?? '').toLowerCase()) {
@@ -743,6 +748,7 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                 ))
               ) : (
                 machines.map(machineId => {
+                  const machineName = machineDisplayNames.get(machineId) ?? machineId;
                   const machineReservations = getMachineReservations(machineId);
                   const currentUser = machineReservations.find(r => r.status === 'in-use');
                   const reserved = machineReservations.find(r => r.status === 'reserved');
@@ -755,7 +761,7 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                   return (
                     <Card key={machineId} className="p-4">
                       <div className="flex justify-between items-center mb-3">
-                        <h4>{machineId}</h4>
+                        <h4>{machineName}</h4>
                         <WashingMachine className="h-4 w-4" />
                       </div>
                       <div className="space-y-2 text-sm">

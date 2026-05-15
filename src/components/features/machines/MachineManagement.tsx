@@ -125,6 +125,15 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
+  const getDormDisplayName = (machine: Machine) => {
+    const dormId = machine.dormId ?? (location.dorm === 'all' ? machine.dorm : undefined);
+    if (dormId) {
+      return dormOptions.find((dorm) => dorm.id === dormId)?.name ?? machine.dorm;
+    }
+
+    return machine.dorm;
+  };
+
   const [newMachine, setNewMachine] = useState({
     name: '',
     type: 'washer' as 'washer' | 'dryer',
@@ -309,9 +318,23 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
   };
 
   const filteredMachines = machines.filter(machine => {
-    const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         machine.dorm.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         machine.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    const searchableValues = [
+      machine.name,
+      machine.id,
+      machine.dorm,
+      machine.location,
+      machine.city,
+      machine.model,
+      machine.serialNumber,
+      machine.machineNumber?.toString(),
+      machine.type,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.toLowerCase());
+
+    const matchesSearch = normalizedSearchTerm === ''
+      || searchableValues.some((value) => value.includes(normalizedSearchTerm));
 
     return matchesSearch;
   });
@@ -670,7 +693,7 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
                     <CardTitle className="text-lg font-semibold">
                       {machine.name}
                     </CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground">{machine.dorm}</CardDescription>
+                    <CardDescription className="text-sm text-muted-foreground">{getDormDisplayName(machine)}</CardDescription>
                   </div>
                 </div>
                 <Badge 
@@ -787,7 +810,7 @@ export function MachineManagement({ location, initialStatusFilter = 'all', onMac
                   <h3 className="text-lg font-semibold">Machine Details</h3>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg w-full min-h-[60px]">
-                      <Tag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <p className="font-medium">{getDormDisplayName(selectedMachine)}</p>
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">Machine ID</p>
                         <p className="font-medium">{selectedMachine.id}</p>

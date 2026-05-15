@@ -66,6 +66,17 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+const formatDate = (iso?: string) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  try {
+    return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  } catch (e) {
+    return d.toLocaleString();
+  }
+};
+
 export function UserManagement({ location }: UserManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -103,14 +114,21 @@ export function UserManagement({ location }: UserManagementProps) {
     let didUnmount = false;
 
     try {
-      const response = await userService.getUsers({
-        cityId: location.cityId,
-        dormId: location.dormId || undefined,
+      const filters: any = {
         page,
         limit,
-        search: searchTerm,
         status: statusFilter !== 'all' ? statusFilter : undefined,
-      });
+      };
+
+      // When a specific dorm is selected, send dormId to the API.
+      // When 'All dorms' is selected, send cityId so the API returns city-wide users.
+      if (location.dormId) {
+        filters.dormId = location.dormId;
+      } else if (location.cityId) {
+        filters.cityId = location.cityId;
+      }
+
+      const response = await userService.getUsers(filters);
 
       if (!didUnmount && response?.data) {
         const mapped: User[] = response.data.map((u: any): User => ({
@@ -173,18 +191,22 @@ export function UserManagement({ location }: UserManagementProps) {
     };
   };
 
-  // Load users and stats on mount and when location changes
+  // Load users and stats on mount and when location, pagination change.
+  // Keep `statusFilter` out of this dependency so changing it only filters
+  // the already-loaded users client-side (avoids full-screen shimmer on change).
   useEffect(() => {
     loadUsers();
     loadStats();
-  }, [location.cityId, location.dormId, page, limit, searchTerm, statusFilter]);
+  }, [location.cityId, location.dormId, page, limit]);
 
   // Filter users based on search and status
   const filteredUsers = users.filter((user) => {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.includes(searchTerm);
+      normalizedSearchTerm === '' ||
+      user.name.toLowerCase().includes(normalizedSearchTerm) ||
+      user.email.toLowerCase().includes(normalizedSearchTerm) ||
+      user.phone.toLowerCase().includes(normalizedSearchTerm);
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -510,8 +532,8 @@ export function UserManagement({ location }: UserManagementProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      <p>{user.registrationDate}</p>
-                      <p className="text-muted-foreground">Last: {user.lastActive}</p>
+                      <p>{formatDate(user.registrationDate)}</p>
+                      <p className="text-muted-foreground">Last: {formatDate(user.lastActive)}</p>
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-1">
@@ -876,11 +898,11 @@ export function UserManagement({ location }: UserManagementProps) {
                 </div>
                 <div>
                   <h4 className="text-sm text-muted-foreground">Registration Date</h4>
-                  <p>{selectedUser.registrationDate}</p>
+                  <p>{formatDate(selectedUser.registrationDate)}</p>
                 </div>
                 <div>
                   <h4 className="text-sm text-muted-foreground">Last Active</h4>
-                  <p>{selectedUser.lastActive}</p>
+                  <p>{formatDate(selectedUser.lastActive)}</p>
                 </div>
               </div>
             </div>

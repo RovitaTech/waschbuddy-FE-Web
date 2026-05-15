@@ -304,8 +304,7 @@ export function UserQueriesManagement({ location }: UserQueriesManagementProps) 
 
     try {
       await queryService.replyToQuery(queryId, {
-        response,
-        status: 'resolved',
+        message: response,
       });
 
       const resolvedAt = new Date().toISOString();

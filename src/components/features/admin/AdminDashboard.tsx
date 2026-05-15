@@ -41,7 +41,7 @@ import { LocationSwitcher } from '../../layout/LocationSwitcher';
 import { MachineDetail } from '../machines/MachineDetail';
 import { NotificationsPanel } from '../../layout/NotificationsPanel';
 import { mockNotifications } from '@/dummy-data';
-import { overviewService } from '@/lib/api';
+import { machineService, overviewService, profileRequestService } from '@/lib/api';
 import { ClientsOverviewResponse } from '@/lib/api/types';
 import { Location } from '@/types';
 import { toast } from 'sonner';
@@ -63,6 +63,18 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
   const [isLoadingOverview, setIsLoadingOverview] = useState(false);
   const [overviewError, setOverviewError] = useState<string | null>(null);
   const [machineStatusPreset, setMachineStatusPreset] = useState<'all' | 'available' | 'in_use' | 'maintenance' | 'offline'>('all');
+  const [machineNamesById, setMachineNamesById] = useState<Record<string, string>>({});
+  const [pendingVerificationActionId, setPendingVerificationActionId] = useState<string | null>(null);
+
+  const buildMachineNamesById = (machines: Array<{ id?: string; name?: string }>) => {
+    return machines.reduce<Record<string, string>>((accumulator, machine) => {
+      if (machine.id && machine.name) {
+        accumulator[machine.id] = machine.name;
+      }
+
+      return accumulator;
+    }, {});
+  };
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -71,6 +83,7 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
 
   useEffect(() => {
     if (activeTab !== 'overview' || !location.cityId) {
+      setMachineNamesById({});
       return;
     }
 
@@ -110,6 +123,37 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
     };
   }, [activeTab, location.cityId, location.dormId]);
 
+  useEffect(() => {
+    if (activeTab !== 'overview' || !location.cityId) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadMachineNames = async () => {
+      try {
+        const machines = await machineService.getMachines({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {}),
+        });
+
+        if (isActive) {
+          setMachineNamesById(buildMachineNamesById(machines));
+        }
+      } catch {
+        if (isActive) {
+          setMachineNamesById({});
+        }
+      }
+    };
+
+    void loadMachineNames();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activeTab, location.cityId, location.dormId]);
+
   // Refresh overview when a machine is deleted elsewhere in the app
   useEffect(() => {
     const onMachineDeleted = async (e: Event) => {
@@ -123,6 +167,11 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
           ...(location.dormId ? { dormId: location.dormId } : {})
         });
         setOverviewData(response);
+        const machines = await machineService.getMachines({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {}),
+        });
+        setMachineNamesById(buildMachineNamesById(machines));
       } catch {
         setOverviewData(null);
         setOverviewError('Unable to load overview data.');
@@ -166,9 +215,46 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
     }
   };
 
-  const handleUserApproval = (userId: string, approved: boolean) => {
-    // In a real app, this would call an API
-    toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
+  const getVerificationUserId = (user: typeof pendingVerifications[number]) => {
+    return user.userId ?? user.id ?? '';
+  };
+
+  const handleUserApproval = async (userId: string, approved: boolean) => {
+    if (!userId) {
+      toast.error('Unable to update user without a user id.');
+      return;
+    }
+
+    setPendingVerificationActionId(userId);
+
+    try {
+      if (approved) {
+        await profileRequestService.approveUser({ userId });
+      } else {
+        await profileRequestService.rejectUser({ userId });
+      }
+
+      setOverviewData((current) => {
+        if (!current) return current;
+
+        const nextPendingVerifications = current.pendingVerifications.filter(
+          (user) => getVerificationUserId(user) !== userId,
+        );
+
+        return {
+          ...current,
+          pendingVerifications: nextPendingVerifications,
+          pendingUsers: Math.max(0, current.pendingUsers - 1),
+        };
+      });
+
+      toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
+    } catch (error) {
+      console.error('Error updating pending verification:', error);
+      toast.error(`Unable to ${approved ? 'approve' : 'reject'} user.`);
+    } finally {
+      setPendingVerificationActionId(null);
+    }
   };
 
   const unreadNotifications = mockNotifications.filter(n => !n.read).length;
@@ -190,13 +276,12 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
           <div className="flex items-center space-x-2 md:space-x-4">
             <div className="flex items-center gap-2">
               <Image
-                src="/waschbuddy-logo.svg"
+                src={isDarkMode ? '/waschbuddy-logo-dark.png' : '/waschbuddy-logo-light.png'}
                 alt="WASCHBUDDY logo"
-                width={28}
-                height={33}
-                className="h-7 w-7"
+                width={260}
+                height={80}
+                className="h-14 w-auto md:h-16"
               />
-              <h1 className="text-base sm:text-lg md:text-xl">WASCHBUDDY</h1>
             </div>
             <div className="hidden md:block">
               <LocationSwitcher
@@ -537,7 +622,7 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                             <div className="flex items-center space-x-3">
                               <AlertTriangle className="h-4 w-4 text-destructive" />
                               <div>
-                                <p className="text-sm">{issue.title ?? (issue.machineId ? `Machine ${issue.machineId}` : 'Machine issue')}</p>
+                                <p className="text-sm">{issue.title ?? (issue.machineId ? machineNamesById[issue.machineId] ?? issue.machineId : 'Machine issue')}</p>
                                 <p className="text-xs text-muted-foreground">{issue.message ?? issue.issue ?? 'Requires attention'}</p>
                               </div>
                             </div>
@@ -559,6 +644,10 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                     <CardContent>
                       <div className="space-y-3">
                         {pendingVerifications.slice(0, 3).map((user, index) => (
+                            (() => {
+                              const verificationUserId = getVerificationUserId(user);
+
+                              return (
                             <div key={user.id ?? user.userId ?? `${index}`} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700">
                               <div className="flex items-center space-x-3">
                                 <Avatar className="h-8 w-8">
@@ -575,19 +664,23 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => handleUserApproval(user.userId ?? user.id ?? `${index}`, true)}
+                                  disabled={!verificationUserId || pendingVerificationActionId === verificationUserId}
+                                  onClick={() => handleUserApproval(verificationUserId, true)}
                                 >
                                   <CheckCircle className="h-3 w-3" />
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => handleUserApproval(user.userId ?? user.id ?? `${index}`, false)}
+                                  disabled={!verificationUserId || pendingVerificationActionId === verificationUserId}
+                                  onClick={() => handleUserApproval(verificationUserId, false)}
                                 >
                                   <XCircle className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
                         {pendingVerifications.length === 0 && (
                           <p className="text-muted-foreground text-center py-4">No pending verifications</p>

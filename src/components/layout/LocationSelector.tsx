@@ -109,11 +109,18 @@ export function LocationSelector({ onLocationSelect }: LocationSelectorProps) {
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Image
-              src="/waschbuddy-logo.svg"
+              src="/waschbuddy-logo-light.png"
               alt="WASCHBUDDY logo"
-              width={56}
-              height={56}
-              className="h-14 w-14"
+              width={320}
+              height={100}
+              className="h-20 w-auto dark:hidden"
+            />
+            <Image
+              src="/waschbuddy-logo-dark.png"
+              alt="WASCHBUDDY logo"
+              width={320}
+              height={100}
+              className="hidden h-20 w-auto dark:block"
             />
           </div>
           <CardTitle className="text-2xl">Select Your Location</CardTitle>

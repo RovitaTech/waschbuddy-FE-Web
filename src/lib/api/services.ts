@@ -598,33 +598,25 @@ export const queryService = {
   },
 
   replyToQuery: async (id: string, body: QueryResponseRequest): Promise<UserQuery> => {
-    const payload: Record<string, unknown> = { ...body } as Record<string, unknown>;
+    const finalPayload = {
+      queryId: id,
+      message: body.message,
+    } as Record<string, unknown>;
 
-    // Normalize status to numeric codes if provided as strings
-    if (payload.status !== undefined) {
-      const s = String(payload.status).toLowerCase();
-      if (s === 'resolved' || s === '2') payload.status = 2;
-      else if (s === 'in_progress' || s === 'inprogress' || s === '1') payload.status = 1;
-      else payload.status = 0;
-    }
-
-    if (payload.priority !== undefined) {
-      const p = String(payload.priority).toLowerCase();
-      if (p === 'high' || p === '2') payload.priority = 2;
-      else if (p === 'medium' || p === '1') payload.priority = 1;
-      else payload.priority = 0;
-    }
+    if (typeof window !== 'undefined') console.debug('[api] replyToQuery payload:', finalPayload);
 
     return apiRequest<UserQuery>(ENDPOINTS.USER_QUERIES.REPLY, {
       method: 'POST',
-      body: JSON.stringify({ ...payload, queryId: id })
+      body: JSON.stringify(finalPayload),
     });
   },
 
   updateQueryStatus: async (id: string, body: object): Promise<UserQuery> => {
-    return apiRequest<UserQuery>(ENDPOINTS.USER_QUERIES.BY_ID(id), {
+    // The API expects status updates at the collection endpoint with a queryId in the payload.
+    const payload = { ...body, queryId: id } as Record<string, unknown>;
+    return apiRequest<UserQuery>(ENDPOINTS.USER_QUERIES.UPDATE_STATUS, {
       method: 'PATCH',
-      body: JSON.stringify(body)
+      body: JSON.stringify(payload),
     });
   }
 };

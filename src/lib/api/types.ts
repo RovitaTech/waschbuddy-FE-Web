@@ -263,8 +263,7 @@ export interface UserApprovalRequest {
 }
 
 export interface QueryResponseRequest {
-  response: string;
-  status: 'resolved' | 'in_progress';
+  message: string;
 }
 
 export interface UserQueryFilters {
