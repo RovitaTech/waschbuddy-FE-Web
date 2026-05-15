@@ -1,25 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Checkbox } from '../../ui/checkbox';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import Image from 'next/image';
-import { DataSource, getStoredDataSource, setStoredDataSource } from '@/lib/config/dataSource';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { setStoredDataSource } from '@/lib/config/dataSource';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getApiBaseUrl } from '@/lib/config/environment';
 
 interface AdminLoginProps {
-  onLogin: (credentials: { email: string; password: string; dataSource: DataSource }) => Promise<void> | void;
+  onLogin: (credentials: { email: string; password: string }) => Promise<void> | void;
 }
 
 export function AdminLogin({ onLogin }: AdminLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [dataSource, setDataSource] = useState<DataSource>('dummy');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'forgot'>('login');
@@ -29,18 +27,14 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setDataSource(getStoredDataSource());
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      setStoredDataSource(dataSource);
-      await onLogin({ email, password, dataSource });
+      setStoredDataSource('api');
+      await onLogin({ email, password });
     } catch {
       setError('Invalid email or password. Please try again.');
     } finally {
@@ -93,19 +87,6 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="data-source" className="text-sm text-slate-700">Data Source</Label>
-                  <Select value={dataSource} onValueChange={(value: DataSource) => setDataSource(value)}>
-                    <SelectTrigger id="data-source" className="h-11 rounded-lg border-slate-200 bg-slate-50">
-                      <SelectValue placeholder="Select data source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dummy">Dummy Data</SelectItem>
-                      <SelectItem value="api">API Data</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-sm text-slate-700">Email</Label>
                   <Input

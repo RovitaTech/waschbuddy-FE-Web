@@ -4,10 +4,23 @@ export interface Machine {
   id: string;
   name: string;
   type: 'washer' | 'dryer';
-  status: 'available' | 'in_use' | 'maintenance' | 'offline';
+  status: 'available' | 'in_use' | 'maintenance' | 'out_of_order' | 'offline';
   location: string;
   dorm: string;
   city: string;
+  machineNumber?: number;
+  serialNumber?: string;
+  installationDate?: string;
+  clientId?: string;
+  dormId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastMaintenanceDate?: string | null;
+  maintenanceScheduled?: boolean;
+  scheduledWindow?: string | null;
+  queueCount?: number;
+  isReserved?: boolean;
+  currentReservation?: unknown;
   currentUser?: string;
   timeRemaining?: number;
   issue?: string;
@@ -87,6 +100,8 @@ export interface Notification {
 export interface Location {
   city: string;
   dorm: string | 'all';
+  cityId?: string;
+  dormId?: string;
 }
 
 export interface LocationStats {

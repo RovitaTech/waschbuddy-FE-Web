@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLogin } from '@/components/features/auth/AdminLogin';
 import { useAuth } from '@/hooks/useAuth';
-import { DataSource } from '@/lib/config/dataSource';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -21,7 +20,7 @@ export default function AdminPage() {
     }
   }, [router]);
 
-  const handleLogin = async (credentials: { email: string; password: string; dataSource: DataSource }) => {
+  const handleLogin = async (credentials: { email: string; password: string }) => {
     try {
       await login(credentials);
     } catch (error) {

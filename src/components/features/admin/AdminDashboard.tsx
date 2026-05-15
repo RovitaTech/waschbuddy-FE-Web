@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { Skeleton } from '../../ui/skeleton';
+import Shimmer from '../../ui/shimmer';
 import { MachineManagement } from '../machines/MachineManagement';
 import { UserManagement } from '../users/UserManagement';
 import { ReservationManagement } from '../reservations/ReservationManagement';
@@ -38,13 +40,16 @@ import { AdminSettings } from './AdminSettings';
 import { LocationSwitcher } from '../../layout/LocationSwitcher';
 import { MachineDetail } from '../machines/MachineDetail';
 import { NotificationsPanel } from '../../layout/NotificationsPanel';
-import { getLocationStats, filterDataByLocation, mockMachines, mockUsers, mockNotifications } from '@/dummy-data';
+import { mockNotifications } from '@/dummy-data';
+import { machineService, overviewService, profileRequestService } from '@/lib/api';
+import { ClientsOverviewResponse } from '@/lib/api/types';
+import { Location } from '@/types';
 import { toast } from 'sonner';
 
 interface AdminDashboardProps {
   onLogout: () => void;
-  location: { city: string; dorm: string | 'all' };
-  onLocationChange: (location: { city: string; dorm: string | 'all' }) => void;
+  location: Location;
+  onLocationChange: (location: Location) => void;
   onBackToLocationSelect: () => void;
 }
 
@@ -54,22 +59,138 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   const [machineAccessType, setMachineAccessType] = useState<'dashboard' | 'machines'>('dashboard');
-  const [stats, setStats] = useState(getLocationStats(location));
+  const [overviewData, setOverviewData] = useState<ClientsOverviewResponse | null>(null);
+  const [isLoadingOverview, setIsLoadingOverview] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
+  const [machineStatusPreset, setMachineStatusPreset] = useState<'all' | 'available' | 'in_use' | 'maintenance' | 'offline'>('all');
+  const [machineNamesById, setMachineNamesById] = useState<Record<string, string>>({});
+  const [pendingVerificationActionId, setPendingVerificationActionId] = useState<string | null>(null);
+
+  const buildMachineNamesById = (machines: Array<{ id?: string; name?: string }>) => {
+    return machines.reduce<Record<string, string>>((accumulator, machine) => {
+      if (machine.id && machine.name) {
+        accumulator[machine.id] = machine.name;
+      }
+
+      return accumulator;
+    }, {});
+  };
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
   };
 
-  // Update stats when location changes
   useEffect(() => {
-    const newStats = getLocationStats(location);
-    setStats(newStats);
-  }, [location.city, location.dorm]); // More specific dependencies
+    if (activeTab !== 'overview' || !location.cityId) {
+      setMachineNamesById({});
+      return;
+    }
+
+    const cityId = location.cityId;
+
+    let isActive = true;
+
+    const loadOverview = async () => {
+      try {
+        setIsLoadingOverview(true);
+        setOverviewError(null);
+
+        const response = await overviewService.getClientsOverview({
+          cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {})
+        });
+
+        if (isActive) {
+          setOverviewData(response);
+        }
+      } catch {
+        if (isActive) {
+          setOverviewData(null);
+          setOverviewError('Unable to load overview data.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingOverview(false);
+        }
+      }
+    };
+
+    void loadOverview();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activeTab, location.cityId, location.dormId]);
+
+  useEffect(() => {
+    if (activeTab !== 'overview' || !location.cityId) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadMachineNames = async () => {
+      try {
+        const machines = await machineService.getMachines({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {}),
+        });
+
+        if (isActive) {
+          setMachineNamesById(buildMachineNamesById(machines));
+        }
+      } catch {
+        if (isActive) {
+          setMachineNamesById({});
+        }
+      }
+    };
+
+    void loadMachineNames();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activeTab, location.cityId, location.dormId]);
+
+  // Refresh overview when a machine is deleted elsewhere in the app
+  useEffect(() => {
+    const onMachineDeleted = async (e: Event) => {
+      const id = (e as CustomEvent).detail as string | undefined;
+      if (!location.cityId) return;
+      setIsLoadingOverview(true);
+      setOverviewError(null);
+      try {
+        const response = await overviewService.getClientsOverview({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {})
+        });
+        setOverviewData(response);
+        const machines = await machineService.getMachines({
+          cityId: location.cityId,
+          ...(location.dormId ? { dormId: location.dormId } : {}),
+        });
+        setMachineNamesById(buildMachineNamesById(machines));
+      } catch {
+        setOverviewData(null);
+        setOverviewError('Unable to load overview data.');
+      } finally {
+        setIsLoadingOverview(false);
+      }
+    };
+
+    window.addEventListener('machine:deleted', onMachineDeleted as EventListener);
+    return () => window.removeEventListener('machine:deleted', onMachineDeleted as EventListener);
+  }, [location.cityId, location.dormId]);
 
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
     setSelectedMachineId(null); // Reset machine selection when changing tabs
+
+    if (newTab !== 'machines') {
+      setMachineStatusPreset('all');
+    }
   };
 
   const handleMachineClick = (machineId: string, accessType: 'dashboard' | 'machines' = 'dashboard') => {
@@ -84,21 +205,68 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
   const handleStatsNavigation = (type: 'machines' | 'users', filter?: string) => {
     if (type === 'machines') {
       setActiveTab('machines');
-      // In a real app, you'd pass the filter to the MachineManagement component
+      if (filter === 'in_use' || filter === 'maintenance' || filter === 'available' || filter === 'offline') {
+        setMachineStatusPreset(filter);
+      } else {
+        setMachineStatusPreset('all');
+      }
     } else if (type === 'users') {
       setActiveTab('users');
     }
   };
 
-  const handleUserApproval = (userId: string, approved: boolean) => {
-    // In a real app, this would call an API
-    toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
+  const getVerificationUserId = (user: typeof pendingVerifications[number]) => {
+    return user.userId ?? user.id ?? '';
+  };
+
+  const handleUserApproval = async (userId: string, approved: boolean) => {
+    if (!userId) {
+      toast.error('Unable to update user without a user id.');
+      return;
+    }
+
+    setPendingVerificationActionId(userId);
+
+    try {
+      if (approved) {
+        await profileRequestService.approveUser({ userId });
+      } else {
+        await profileRequestService.rejectUser({ userId });
+      }
+
+      setOverviewData((current) => {
+        if (!current) return current;
+
+        const nextPendingVerifications = current.pendingVerifications.filter(
+          (user) => getVerificationUserId(user) !== userId,
+        );
+
+        return {
+          ...current,
+          pendingVerifications: nextPendingVerifications,
+          pendingUsers: Math.max(0, current.pendingUsers - 1),
+        };
+      });
+
+      toast.success(`User ${approved ? 'approved' : 'rejected'} successfully`);
+    } catch (error) {
+      console.error('Error updating pending verification:', error);
+      toast.error(`Unable to ${approved ? 'approve' : 'reject'} user.`);
+    } finally {
+      setPendingVerificationActionId(null);
+    }
   };
 
   const unreadNotifications = mockNotifications.filter(n => !n.read).length;
 
-  // Get machines with issues for the current location
-  const machinesWithIssues = filterDataByLocation(mockMachines, location).filter(m => m.status === 'maintenance');
+  const recentMachineIssues = overviewData?.recentMachineIssues ?? [];
+  const pendingVerifications = overviewData?.pendingVerifications ?? [];
+  const getVerificationDisplayName = (user: typeof pendingVerifications[number]) => {
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    if (fullName) return fullName;
+    if (user.name?.trim()) return user.name.trim();
+    return 'Unknown user';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,13 +276,12 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
           <div className="flex items-center space-x-2 md:space-x-4">
             <div className="flex items-center gap-2">
               <Image
-                src="/waschbuddy-logo.svg"
+                src={isDarkMode ? '/waschbuddy-logo-dark.png' : '/waschbuddy-logo-light.png'}
                 alt="WASCHBUDDY logo"
-                width={28}
-                height={33}
-                className="h-7 w-7"
+                width={260}
+                height={80}
+                className="h-14 w-auto md:h-16"
               />
-              <h1 className="text-base sm:text-lg md:text-xl">WASCHBUDDY</h1>
             </div>
             <div className="hidden md:block">
               <LocationSwitcher
@@ -287,13 +454,6 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                   Reservations
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="profile-requests" 
-                  className={`justify-start w-full text-foreground relative ${activeTab === 'profile-requests' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Profile Requests
-                </TabsTrigger>
-                <TabsTrigger 
                   value="queries" 
                   className={`justify-start w-full text-foreground relative ${activeTab === 'queries' ? 'bg-primary/10 text-foreground shadow-sm border-l-4 border-primary/50' : 'hover:bg-accent/50 hover:text-foreground'}`}
                 >
@@ -323,12 +483,67 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                 onBack={handleBackFromMachine}
                 accessType={machineAccessType}
               />
+            ) : activeTab === 'overview' && isLoadingOverview ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="h-20 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-24 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="h-48 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                  <div className="h-48 w-full rounded-lg overflow-hidden">
+                    <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                  </div>
+                </div>
+              </div>
             ) : (
               <Tabs value={activeTab} className="space-y-6">
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
               <div>
                 <h2 className="text-2xl mb-6">Dashboard Overview</h2>
+
+                {isLoadingOverview && (
+                  <div className="mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                      <div className="h-24 w-full rounded-lg overflow-hidden">
+                        <Shimmer style={{ height: '100%', borderRadius: 12 }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {overviewError && (
+                  <p className="text-sm text-destructive mb-4">{overviewError}</p>
+                )}
                 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -338,9 +553,9 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                       <WashingMachine className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl">{stats.totalMachines}</div>
+                      <div className="text-2xl">{overviewData?.totalMachines ?? 0}</div>
                       <p className="text-xs text-muted-foreground">
-                        {stats.activeMachines} active
+                        {overviewData?.activeMachines ?? 0} active
                       </p>
                     </CardContent>
                   </Card>
@@ -351,7 +566,7 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                       <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl">{stats.inUseMachines}</div>
+                      <div className="text-2xl">{overviewData?.machinesInUse ?? 0}</div>
                       <p className="text-xs text-muted-foreground">
                         Currently running
                       </p>
@@ -364,7 +579,7 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                       <AlertTriangle className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl">{stats.maintenanceRequired}</div>
+                      <div className="text-2xl">{overviewData?.machinesInMaintenance ?? 0}</div>
                       <p className="text-xs text-muted-foreground">
                         Require attention
                       </p>
@@ -377,9 +592,9 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                       <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl">{stats.totalUsers}</div>
+                      <div className="text-2xl">{overviewData?.totalUsers ?? 0}</div>
                       <p className="text-xs text-muted-foreground">
-                        {stats.pendingVerifications} pending verification
+                        {overviewData?.pendingUsers ?? 0} pending verification
                       </p>
                     </CardContent>
                   </Card>
@@ -393,24 +608,28 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                       <CardDescription>Machines requiring attention</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        {machinesWithIssues.slice(0, 2).map((machine) => (
+                      <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+                        {recentMachineIssues.map((issue, index) => (
                           <div 
-                            key={machine.id}
+                            key={issue.id ?? issue.machineId ?? `${index}`}
                             className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg cursor-pointer hover:bg-destructive/20 transition-colors"
-                            onClick={() => handleMachineClick(machine.id, 'dashboard')}
+                            onClick={() => {
+                              if (issue.machineId) {
+                                handleMachineClick(issue.machineId, 'dashboard');
+                              }
+                            }}
                           >
                             <div className="flex items-center space-x-3">
                               <AlertTriangle className="h-4 w-4 text-destructive" />
                               <div>
-                                <p className="text-sm">Machine {machine.id}</p>
-                                <p className="text-xs text-muted-foreground">{machine.issue}</p>
+                                <p className="text-sm">{issue.title ?? (issue.machineId ? machineNamesById[issue.machineId] ?? issue.machineId : 'Machine issue')}</p>
+                                <p className="text-xs text-muted-foreground">{issue.message ?? issue.issue ?? 'Requires attention'}</p>
                               </div>
                             </div>
-                            <Badge variant="destructive">Critical</Badge>
+                            <Badge variant="destructive">{issue.severity ?? 'Issue'}</Badge>
                           </div>
                         ))}
-                        {machinesWithIssues.length === 0 && (
+                        {recentMachineIssues.length === 0 && (
                           <p className="text-muted-foreground text-center py-4">No machine issues</p>
                         )}
                       </div>
@@ -424,40 +643,48 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {filterDataByLocation(mockUsers, location)
-                          .filter(user => user.status === 'pending')
-                          .slice(0, 3)
-                          .map((user) => (
-                            <div key={user.id} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700">
+                        {pendingVerifications.slice(0, 3).map((user, index) => (
+                            (() => {
+                              const verificationUserId = getVerificationUserId(user);
+
+                              return (
+                            <div key={user.id ?? user.userId ?? `${index}`} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700">
                               <div className="flex items-center space-x-3">
                                 <Avatar className="h-8 w-8">
                                   <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">
-                                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                    {getVerificationDisplayName(user).split(' ').map(n => n[0]).join('').toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <p className="text-sm dark:text-black">{user.name}</p>
-                                  <p className="text-xs text-muted-foreground dark:text-gray-400">{user.email}</p>
+                                  <p className="text-sm dark:text-black">{getVerificationDisplayName(user)}</p>
+                                  <p className="text-xs text-muted-foreground dark:text-gray-400">{user.email ?? 'No email'}</p>
                                 </div>
                               </div>
                               <div className="flex space-x-2">
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => handleUserApproval(user.id, true)}
+                                  disabled={!verificationUserId || pendingVerificationActionId === verificationUserId}
+                                  onClick={() => handleUserApproval(verificationUserId, true)}
                                 >
                                   <CheckCircle className="h-3 w-3" />
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => handleUserApproval(user.id, false)}
+                                  disabled={!verificationUserId || pendingVerificationActionId === verificationUserId}
+                                  onClick={() => handleUserApproval(verificationUserId, false)}
                                 >
                                   <XCircle className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
+                        {pendingVerifications.length === 0 && (
+                          <p className="text-muted-foreground text-center py-4">No pending verifications</p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -469,6 +696,7 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
             <TabsContent value="machines">
               <MachineManagement 
                 location={location} 
+                initialStatusFilter={machineStatusPreset}
                 onMachineClick={(machineId) => handleMachineClick(machineId, 'machines')}
               />
             </TabsContent>

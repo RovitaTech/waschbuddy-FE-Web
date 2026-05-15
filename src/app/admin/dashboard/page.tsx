@@ -10,9 +10,9 @@ import { Location } from '@/types';
 type DashboardState = 'location' | 'dashboard';
 
 export default function AdminDashboardPage() {
-  const [state, setState] = useState<DashboardState>('location');
   const { isAuthenticated, logout } = useProtectedRoute();
   const { selectedLocation, selectLocation, clearLocation } = useLocation();
+  const [state, setState] = useState<DashboardState>(() => (selectedLocation ? 'dashboard' : 'location'));
 
   const handleLocationSelect = (location: Location) => {
     selectLocation(location);

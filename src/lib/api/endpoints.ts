@@ -2,6 +2,7 @@
 
 export const ENDPOINTS = {
   AUTH: {
+    SIGNUP: '/auth/signup',
     // Client admin
     ADMIN_LOGIN: '/auth/admin/login',
     ADMIN_SIGNUP: '/auth/admin/signup',
@@ -20,12 +21,19 @@ export const ENDPOINTS = {
     ALL_CLIENTS: '/super-admin/clients',
     CLIENT_BY_ID: (id: string) => `/super-admin/clients/${id}`,
     DELETE_CLIENT: '/super-admin/clients/client',
+    // Countries
+    COUNTRIES: '/super-admin/countries',
+    // Cities
+    CITIES: '/super-admin/cities',
+    DELETE_CITY: (id: string) => `/super-admin/cities/${id}`,
     // Dorms
+    ALL_DORMS: '/super-admin/clients/dorms',
     ADD_DORM: '/super-admin/clients/dorms',
     DELETE_DORM: '/super-admin/clients/dorms',
     DELETE_MULTIPLE_DORMS: '/super-admin/clients/dorms/multiple',
   },
   OVERVIEW: {
+    CLIENTS_OVERVIEW: '/clients/overview',
     CITIES: '/clients/cities',
     DORMS: '/clients/dorms',
     DORM_DETAIL: '/clients/dorm/detail',
@@ -34,7 +42,7 @@ export const ENDPOINTS = {
     DORMS_DATA: '/clients/dorms/data',
   },
   MACHINES: {
-    ALL: '/clients/machines/all',
+    ALL: '/clients/machines',
     ADD: '/clients/machines',
     BY_DORM: '/clients/machines/by-dorm',
     DETAIL: '/clients/machines/detail',
@@ -48,6 +56,7 @@ export const ENDPOINTS = {
     PROFILE_CHANGE_REQUESTS_STATS: '/clients/user-management/profile-change-requests/stats',
     APPROVE_REJECT_REQUEST: '/clients/user-management/profile-change-requests/approve-reject',
     DELETE_USER: '/clients/user-management/users',
+    SEND_EMAIL: '/clients/user-management/send-email',
   },
   RESERVATIONS: {
     ALL: '/clients/reservations',
