@@ -34,7 +34,10 @@ interface Reservation {
   userEmail: string;
   machineId: string;
   machineName: string;
+  machineModel?: string;
+  machineSerialNumber?: string;
   status: 'reserved' | 'in-use' | 'completed' | 'expired' | 'queued' | 'cancelled';
+  reservationDate?: string;
   reservedAt: string;
   startTime?: string;
   endTime?: string;
@@ -55,9 +58,16 @@ interface ReservationApiItem {
   userEmail?: string;
   machineId?: string;
   machineName?: string;
+  machineModel?: string;
+  machineSerialNumber?: string;
   machine?: string;
   status?: string;
+  reservationDate?: string;
   reservedAt?: string;
+  reservationTime?: string;
+  startedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
   startTime?: string;
   endTime?: string;
   timeRemaining?: number;
@@ -146,11 +156,14 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
       userName,
       userEmail: item.userEmail ?? item.email ?? '',
       machineId: item.machineId ?? '',
-      machineName: item.machineName ?? item.machine ?? item.machineId ?? 'Unknown machine',
+      machineName: item.machineName ?? item.machineModel ?? item.machine ?? 'Unknown machine',
+      machineModel: item.machineModel,
+      machineSerialNumber: item.machineSerialNumber,
       status: normalizeReservationStatus(item.status),
-      reservedAt: item.reservedAt ?? new Date().toISOString(),
-      startTime: item.startTime,
-      endTime: item.endTime,
+      reservationDate: item.reservationDate,
+      reservedAt: item.reservationTime ?? item.reservedAt ?? item.startedAt ?? item.createdAt ?? item.updatedAt ?? new Date().toISOString(),
+      startTime: item.reservationDate && item.startTime ? `${item.reservationDate}T${item.startTime}` : item.startTime,
+      endTime: item.reservationDate && item.endTime ? `${item.reservationDate}T${item.endTime}` : item.endTime,
       timeRemaining: item.timeRemaining,
       queuePosition: item.queuePosition,
       paymentStatus: (item.paymentStatus === 'paid' || item.paymentStatus === 'pending' || item.paymentStatus === 'refunded'
@@ -286,21 +299,56 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
     return end.toISOString();
   };
 
-  const formatTimeRange = (startTime?: string, endTime?: string) => {
-    if (!startTime) return 'Not started';
-    const start = new Date(startTime);
-    const end = endTime ? new Date(endTime) : new Date(calculateEndTime(startTime));
-    return `${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}`;
+  const combineDateAndTime = (dateValue?: string, timeValue?: string) => {
+    if (!dateValue || !timeValue) return null;
+
+    const combined = `${dateValue}T${timeValue}`;
+    const parsed = new Date(combined);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return null;
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    return parsed.toLocaleString();
+  };
+
+  const getMachineDisplayLabel = (reservation: Pick<Reservation, 'machineName' | 'machineModel' | 'machineSerialNumber' | 'machineId'>) => {
+    if (reservation.machineName?.trim()) return reservation.machineName;
+    if (reservation.machineModel?.trim() && reservation.machineSerialNumber?.trim()) {
+      return `${reservation.machineModel} (${reservation.machineSerialNumber})`;
+    }
+    if (reservation.machineModel?.trim()) return reservation.machineModel;
+    if (reservation.machineSerialNumber?.trim()) return reservation.machineSerialNumber;
+    return reservation.machineId;
+  };
+
+  const formatTimeRange = (reservationDate?: string, startTime?: string, endTime?: string) => {
+    const start = combineDateAndTime(reservationDate, startTime) ?? (startTime ? new Date(startTime) : null);
+    const formattedStart = start && !Number.isNaN(start.getTime()) ? start : null;
+    if (!formattedStart) return 'Time not available';
+
+    const end = combineDateAndTime(reservationDate, endTime)
+      ?? (endTime ? new Date(endTime) : new Date(calculateEndTime(formattedStart.toISOString())));
+
+    if (Number.isNaN(end.getTime())) {
+      return formattedStart.toLocaleString();
+    }
+
+    return `${formattedStart.toLocaleTimeString()} - ${end.toLocaleTimeString()}`;
   };
 
   const formatReservationTime = (reservation: Reservation) => {
-    const reservedDate = new Date(reservation.reservedAt).toLocaleDateString();
+    const reservedAt = formatDateTime(reservation.reservedAt) ?? 'Unknown reservation time';
     if (reservation.startTime) {
-      const timeRange = formatTimeRange(reservation.startTime, reservation.endTime);
-      return `Reserved: ${reservedDate}\n${timeRange}`;
-    } else {
-      return `Reserved: ${reservedDate}`;
+      const timeRange = formatTimeRange(reservation.reservationDate, reservation.startTime, reservation.endTime);
+      return `Reserved: ${reservedAt}\n${timeRange}`;
     }
+
+    return `Reserved: ${reservedAt}`;
   };
 
   const getMachineReservations = (machineId: string) => {
@@ -634,8 +682,10 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p>{reservation.machineName}</p>
-                      <p className="text-sm text-muted-foreground">{reservation.machineId}</p>
+                      <p>{getMachineDisplayLabel(reservation)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {reservation.machineSerialNumber ?? reservation.machineModel ?? reservation.machineId}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -838,8 +888,10 @@ export function ReservationManagement({ location }: ReservationManagementProps) 
                 </div>
                 <div>
                   <h4 className="text-sm text-muted-foreground">Machine</h4>
-                  <p>{selectedReservation.machineName}</p>
-                  <p className="text-sm text-muted-foreground">{selectedReservation.machineId}</p>
+                  <p>{getMachineDisplayLabel(selectedReservation)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedReservation.machineSerialNumber ?? selectedReservation.machineModel ?? selectedReservation.machineId}
+                  </p>
                 </div>
                 <div>
                   <h4 className="text-sm text-muted-foreground">Status</h4>
