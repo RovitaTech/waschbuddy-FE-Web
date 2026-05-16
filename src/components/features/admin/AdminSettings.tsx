@@ -247,13 +247,43 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       console.groupEnd();
 
       const result = await settingsService.updateAllDorms(payload);
-
       const successMsg = (result && (result.message || result.status === 'ok')) ? (result.message || 'Settings updated') : 'Settings saved successfully!';
       const affected = result?.affectedDorms?.length;
 
       toast.success(successMsg, {
         description: affected ? `Applied to ${affected} dorm(s)` : undefined,
       });
+
+      // Refresh settings from server so UI reflects latest values
+      try {
+        const refreshed = await settingsService.getAllSettings(location.dormId ? undefined : location.cityId, location.dormId);
+        if (refreshed) {
+          setApiSettings(refreshed);
+          setSettings(prev => ({
+            ...prev,
+            system: {
+              ...prev.system,
+              maxReservationTime: String(refreshed.maxReservationTime ?? refreshed.settings?.maxReservationTime ?? prev.system.maxReservationTime),
+              cleaningInterval: String(refreshed.cleaningInterval ?? refreshed.settings?.cleaningInterval ?? prev.system.cleaningInterval),
+              maintenanceMode: refreshed.maintenanceMode ?? refreshed.settings?.maintenanceMode ?? prev.system.maintenanceMode,
+              autoApproveUsers: refreshed.autoApproveUsers ?? refreshed.settings?.autoApproveUsers ?? prev.system.autoApproveUsers,
+            },
+            business: {
+              ...prev.business,
+              maxFutureReservationDays: String(refreshed.maxFutureReservationDays ?? refreshed.settings?.maxFutureReservationDays ?? prev.business.maxFutureReservationDays),
+              maxNumberOfQueues: String(refreshed.maxQueues ?? refreshed.settings?.maxQueues ?? prev.business.maxNumberOfQueues),
+              cancellationWindow: String(refreshed.cancellationWindow ?? refreshed.settings?.cancellationWindow ?? prev.business.cancellationWindow),
+              reservationPrice: String(refreshed.reservationPrice ?? refreshed.settings?.reservationPrice ?? prev.business.reservationPrice),
+              operatingHours: {
+                start: (refreshed.startTime ?? refreshed.settings?.startTime ?? prev.business.operatingHours.start) as string,
+                end: (refreshed.endTime ?? refreshed.settings?.endTime ?? prev.business.operatingHours.end) as string,
+              }
+            }
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to refresh settings after save:', err);
+      }
     } catch (error) {
       console.error('Error saving settings:', error);
       const backendMsg = (error as any)?.responseBody?.message || (error as any)?.message;
