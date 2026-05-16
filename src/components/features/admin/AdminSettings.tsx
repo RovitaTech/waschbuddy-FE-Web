@@ -193,10 +193,21 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       // Add location targeting
       if (location.dorm === 'all') {
         if (location.cityId) {
-          payload.cityId = location.cityId;
+          // When a city is selected in the dropdown, fetch all dorms for that city
+          // and send their IDs in `dormIds`. Do NOT include `cityId` in the body.
+          try {
+            const dormsData = await overviewService.getDorms({ cityId: location.cityId });
+            const dormIds = (dormsData || []).map((d: any) => d.id || d.dormId).filter(Boolean);
+            payload.dormIds = dormIds;
+          } catch (err) {
+            console.error('Failed to load dorms for city while saving settings:', err);
+            // Fallback to empty array if fetch fails
+            payload.dormIds = [];
+          }
+        } else {
+          // No cityId available — send an empty dormIds array as backend expects
+          payload.dormIds = [];
         }
-        // Backend expects an array for dormIds even when applying to whole city
-        payload.dormIds = [];
       } else {
         // Resolve dormIds to UUIDs
         let resolvedDormIds: string[] = [];
