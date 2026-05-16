@@ -46,6 +46,7 @@ type SettingsApiResponse = {
     citySpecificSettings?: Record<string, SettingsSource>;
     dormSpecificSettings?: Record<string, SettingsSource>;
   };
+  city?: { id: string };
   citySettings?: SettingsSource;
   dormSpecificSettings?: Record<string, SettingsSource>;
 };
@@ -57,6 +58,7 @@ const resolveSettingsScope = (
   if (!response) return null;
 
   const globalSettings = response.settings ?? null;
+  const responseCity = response.city?.id;
 
   if (location.dormId) {
     return (
@@ -66,10 +68,12 @@ const resolveSettingsScope = (
     ) as SettingsSource | null;
   }
 
-  if (location.cityId) {
+  if (location.cityId || responseCity) {
+    const cityId = location.cityId || responseCity;
     return (
+      response.citySpecificSettings?.[cityId] ??
+      globalSettings?.citySpecificSettings?.[cityId] ??
       response.citySettings ??
-      globalSettings?.citySpecificSettings?.[location.cityId] ??
       globalSettings
     ) as SettingsSource | null;
   }
