@@ -55,7 +55,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       maintenanceMode: false,
       autoApproveUsers: false,
       maxReservationTime: '60',
-      cleaningInterval: '120',
+      cleaningInterval: '15',
       maintenanceNotice: {
         title: 'Maintenance Notice',
         message: 'System will be under maintenance from 2 AM to 4 AM today.',
@@ -71,8 +71,8 @@ export function AdminSettings({ location }: AdminSettingsProps) {
     business: {
       reservationPrice: '2.50',
       cancellationWindow: '15',
-      maxFutureReservationDays: '30',
-      maxNumberOfQueues: '5',
+      maxFutureReservationDays: '0',
+      maxNumberOfQueues: '1',
       operatingHours: {
         start: '06:00',
         end: '23:00'
@@ -83,6 +83,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
   const [customMessage, setCustomMessage] = useState('');
   const [systemMessageGlobal, setSystemMessageGlobal] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showMaxReservationAlert, setShowMaxReservationAlert] = useState(false);
 
   // Load cities and dorms on mount
   useEffect(() => {
@@ -118,14 +119,14 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             system: {
               ...prev.system,
               maxReservationTime: String(data.maxReservationTime || 60),
-              cleaningInterval: String(data.cleaningInterval || 120),
+              cleaningInterval: String(data.cleaningInterval || 15),
               maintenanceMode: data.maintenanceMode || false,
               autoApproveUsers: data.autoApproveUsers || false,
             },
             business: {
               ...prev.business,
-              maxFutureReservationDays: String(data.maxFutureReservationDays || 30),
-              maxNumberOfQueues: String(data.maxQueues || 5),
+              maxFutureReservationDays: String(data.maxFutureReservationDays || 0),
+              maxNumberOfQueues: String(data.maxQueues || 1),
               cancellationWindow: String(data.cancellationWindow || 15),
               reservationPrice: String(data.reservationPrice || 2.50),
               operatingHours: {
@@ -156,6 +157,15 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         [setting]: value
       }
     }));
+  };
+
+  const handleMaxFutureReservationChange = (value: string) => {
+    const numValue = parseInt(value);
+    if (numValue > 7) {
+      setShowMaxReservationAlert(true);
+      return;
+    }
+    handleSettingChange('business', 'maxFutureReservationDays', value);
   };
 
   const handleSave = async () => {
@@ -510,13 +520,21 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="cleaning-interval">Cleaning Interval (minutes)</Label>
-              <Input
-                id="cleaning-interval"
-                type="number"
+              <Select
                 value={settings.system.cleaningInterval}
-                onChange={(e) => handleSettingChange('system', 'cleaningInterval', e.target.value)}
+                onValueChange={(value) => handleSettingChange('system', 'cleaningInterval', value)}
                 disabled={isLoadingSettings}
-              />
+              >
+                <SelectTrigger id="cleaning-interval">
+                  <SelectValue placeholder="Select cleaning interval" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 minutes</SelectItem>
+                  <SelectItem value="30">30 minutes</SelectItem>
+                  <SelectItem value="45">45 minutes</SelectItem>
+                  <SelectItem value="60">60 minutes</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
@@ -734,23 +752,41 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="max-future-reservation-days">Max Future Reservation Days</Label>
-              <Input
-                id="max-future-reservation-days"
-                type="number"
+              <Select
                 value={settings.business.maxFutureReservationDays}
-                onChange={(e) => handleSettingChange('business', 'maxFutureReservationDays', e.target.value)}
+                onValueChange={handleMaxFutureReservationChange}
                 disabled={isLoadingSettings}
-              />
+              >
+                <SelectTrigger id="max-future-reservation-days">
+                  <SelectValue placeholder="Select max days" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((day) => (
+                    <SelectItem key={day} value={String(day)}>
+                      {day} day{day !== 1 ? 's' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="max-number-of-queues">Max Number of Queues</Label>
-              <Input
-                id="max-number-of-queues"
-                type="number"
+              <Select
                 value={settings.business.maxNumberOfQueues}
-                onChange={(e) => handleSettingChange('business', 'maxNumberOfQueues', e.target.value)}
+                onValueChange={(value) => handleSettingChange('business', 'maxNumberOfQueues', value)}
                 disabled={isLoadingSettings}
-              />
+              >
+                <SelectTrigger id="max-number-of-queues">
+                  <SelectValue placeholder="Select max queues" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5].map((queue) => (
+                    <SelectItem key={queue} value={String(queue)}>
+                      {queue}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Operating Hours</Label>
@@ -864,6 +900,21 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             {isResetting ? 'Resetting...' : 'Reset Settings'}
           </AlertDialogAction>
           <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Max Future Reservation Days Validation Alert */}
+      <AlertDialog open={showMaxReservationAlert} onOpenChange={setShowMaxReservationAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invalid Value</AlertDialogTitle>
+            <AlertDialogDescription>
+              Future reservation can be done up to 7 days only.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogAction onClick={() => setShowMaxReservationAlert(false)}>
+            OK
+          </AlertDialogAction>
         </AlertDialogContent>
       </AlertDialog>
     </div>
