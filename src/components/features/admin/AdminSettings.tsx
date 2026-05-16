@@ -109,7 +109,14 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       try {
         setIsLoadingSettings(true);
         setSettingsError(null);
-        const data = await settingsService.getAllSettings(location.cityId, location.dormId);
+        // If a dorm is selected, load dorm-specific settings (do not send cityId)
+        let data: any = null;
+        if (location.dormId) {
+          // Request dorm settings using query param: /clients/settings?dormId=...
+          data = await settingsService.getAllSettings(undefined, location.dormId);
+        } else {
+          data = await settingsService.getAllSettings(location.cityId);
+        }
         setApiSettings(data);
         
         // Map API data to local state (simplified mapping)
