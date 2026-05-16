@@ -22,6 +22,7 @@ import {
   ClientDormsRequest,
   ClientsOverviewRequest,
   ClientsOverviewResponse,
+  CreateClientRequest,
   Country,
   CreateCountryRequest,
   CreateDormRequest,
@@ -183,6 +184,13 @@ export const superAdminService = {
     return apiRequest<any[]>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS);
   },
 
+  createClient: async (body: CreateClientRequest): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
   getClientById: async (id: string): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.CLIENT_BY_ID(id));
   },
@@ -195,7 +203,9 @@ export const superAdminService = {
   },
 
   getCountries: async (): Promise<Country[]> => {
-    return apiRequest<Country[]>(ENDPOINTS.SUPER_ADMIN.COUNTRIES);
+    return apiRequest<Country[]>(ENDPOINTS.SUPER_ADMIN.COUNTRIES, {
+      skipAuth: true,
+    });
   },
 
   addCountry: async (body: CreateCountryRequest): Promise<Country> => {
@@ -624,7 +634,10 @@ export const queryService = {
 // Settings Services
 export const settingsService = {
   getAllSettings: async (cityId?: string, dormId?: string): Promise<any> => {
-    const queryString = buildQueryString({ cityId, dormId });
+    // If a dormId is provided, only send dormId in the query string
+    // When a dorm is selected we must NOT include cityId in the request
+    const params: Record<string, string | undefined> = dormId ? { dormId } : { cityId };
+    const queryString = buildQueryString(params);
     return apiRequest<any>(`${ENDPOINTS.SETTINGS.GET_ALL}${queryString}`);
   },
 

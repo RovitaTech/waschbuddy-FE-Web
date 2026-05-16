@@ -4,13 +4,89 @@ import { dummyLoginCredentials } from '@/dummy-data';
 import { DataSource, getStoredDataSource, setStoredDataSource } from '@/lib/config/dataSource';
 import { getApiBaseUrl } from '@/lib/config/environment';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { clearAuthToken, setAuthToken } from '@/lib/api/authToken';
+import { clearAuthToken, setAuthToken, setRefreshToken } from '@/lib/api/authToken';
 
 const AUTH_USER_KEY = 'authUser';
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const performLoginRequest = useCallback(async (endpoint: string, credentials: AuthCredentials) => {
+    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: credentials.email,
+        password: credentials.password,
+      }),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      let apiMessage = '';
+
+      if (typeof payload?.message === 'string') {
+        apiMessage = payload.message;
+      } else if (typeof payload?.message === 'object' && payload.message?.message) {
+        apiMessage = payload.message.message;
+      } else if (typeof payload?.error === 'string') {
+        apiMessage = payload.error;
+      } else if (payload?.data?.message) {
+        apiMessage = payload.data.message;
+      }
+
+      if (!apiMessage) {
+        if (response.status === 401) {
+          apiMessage = 'Invalid email or password. Please try again.';
+        } else if (response.status === 403) {
+          apiMessage = 'You do not have permission to access this resource.';
+        } else if (response.status === 404) {
+          apiMessage = 'User not found. Please check your email.';
+        } else if (response.status >= 500) {
+          apiMessage = 'Server error. Please try again later.';
+        } else {
+          apiMessage = 'Login failed. Please try again.';
+        }
+      }
+
+      throw new Error(apiMessage);
+    }
+
+    const token = payload?.access_token ?? payload?.token ?? payload?.accessToken ?? null;
+    const refreshToken = payload?.refresh_token ?? payload?.refreshToken ?? null;
+    const apiUser = payload?.user ?? null;
+
+    if (!token || typeof token !== 'string') {
+      throw new Error('Authentication token not found in response.');
+    }
+
+    if (!apiUser) {
+      throw new Error('User data not found in response.');
+    }
+
+    const authUser: AuthUser = {
+      id: apiUser.id,
+      email: apiUser.email,
+      firstName: apiUser.firstName,
+      lastName: apiUser.lastName,
+      role: apiUser.role,
+    };
+
+    return { token, refreshToken, authUser };
+  }, []);
+
+  const redirectAfterLogin = useCallback((authUser: AuthUser) => {
+    const role = (authUser.role ?? '').toLowerCase();
+    const destination = role.includes('super') ? '/super-admin/dashboard' : '/admin/dashboard';
+
+    if (typeof window !== 'undefined') {
+      window.location.assign(destination);
+    }
+  }, []);
 
   const login = useCallback(async (credentials: AuthCredentials): Promise<boolean> => {
     setIsLoading(true);
@@ -24,109 +100,50 @@ export function useAuth() {
       setStoredDataSource(selectedSource);
 
       if (selectedSource === 'api') {
-        console.info('[auth] api login request', {
-          endpoint: `${getApiBaseUrl()}${ENDPOINTS.AUTH.ADMIN_LOGIN}`,
-        });
+        const explicitSuper = credentials.isSuperAdmin === true;
+        const explicitAdmin = credentials.isSuperAdmin === false;
 
-        const response = await fetch(`${getApiBaseUrl()}${ENDPOINTS.AUTH.ADMIN_LOGIN}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        });
+        const endpointsToTry = explicitSuper
+          ? [ENDPOINTS.AUTH.SUPER_ADMIN_LOGIN]
+          : explicitAdmin
+          ? [ENDPOINTS.AUTH.ADMIN_LOGIN]
+          : [ENDPOINTS.AUTH.ADMIN_LOGIN, ENDPOINTS.AUTH.SUPER_ADMIN_LOGIN];
 
-        const payload = await response.json().catch(() => null);
+        let lastError: Error | null = null;
+        for (const endpoint of endpointsToTry) {
+          try {
+            console.info('[auth] api login request', { endpoint: `${getApiBaseUrl()}${endpoint}` });
 
-        if (!response.ok) {
-          // Extract error message from various response formats
-          let apiMessage = '';
+            const { token, refreshToken, authUser } = await performLoginRequest(endpoint, credentials);
 
-          if (typeof payload?.message === 'string') {
-            apiMessage = payload.message;
-          } else if (typeof payload?.message === 'object' && payload.message?.message) {
-            apiMessage = payload.message.message;
-          } else if (typeof payload?.error === 'string') {
-            apiMessage = payload.error;
-          } else if (payload?.data?.message) {
-            apiMessage = payload.data.message;
-          }
-
-          // Provide helpful messages based on HTTP status
-          if (!apiMessage) {
-            if (response.status === 401) {
-              apiMessage = 'Invalid email or password. Please try again.';
-            } else if (response.status === 403) {
-              apiMessage = 'You do not have permission to access this resource.';
-            } else if (response.status === 404) {
-              apiMessage = 'User not found. Please check your email.';
-            } else if (response.status >= 500) {
-              apiMessage = 'Server error. Please try again later.';
-            } else {
-              apiMessage = 'Login failed. Please try again.';
+            clearAuthToken();
+            setAuthToken(token);
+            if (refreshToken) {
+              setRefreshToken(refreshToken);
             }
-          }
 
-          console.error('[auth] api login failed', {
-            status: response.status,
-            message: apiMessage,
-            fullResponse: payload,
-          });
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
+            }
 
-          clearAuthToken();
-          if (typeof window !== 'undefined') {
-            window.localStorage.removeItem(AUTH_USER_KEY);
+            setUser(authUser);
+
+            console.info('[auth] api login success, redirecting by role', { role: authUser.role });
+            redirectAfterLogin(authUser);
+            return true;
+          } catch (error) {
+            lastError = error instanceof Error ? error : new Error('Login failed. Please try again.');
+            console.error('[auth] api login attempt failed', { endpoint, message: lastError.message });
           }
-          throw new Error(apiMessage);
         }
 
-        const token = payload?.access_token ?? null;
-        const apiUser = payload?.user ?? null;
-
-        if (!token || typeof token !== 'string') {
-          console.error('[auth] api login missing access_token in response');
-          clearAuthToken();
-          if (typeof window !== 'undefined') {
-            window.localStorage.removeItem(AUTH_USER_KEY);
-          }
-          throw new Error('Authentication token not found in response.');
-        }
-
-        if (!apiUser) {
-          console.error('[auth] api login missing user data in response');
-          clearAuthToken();
-          if (typeof window !== 'undefined') {
-            window.localStorage.removeItem(AUTH_USER_KEY);
-          }
-          throw new Error('User data not found in response.');
-        }
-
-        const authUser: AuthUser = {
-          id: apiUser.id,
-          email: apiUser.email,
-          firstName: apiUser.firstName,
-          lastName: apiUser.lastName,
-          role: apiUser.role,
-        };
-
-        setAuthToken(token);
-
+        clearAuthToken();
         if (typeof window !== 'undefined') {
-          window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
+          window.localStorage.removeItem(AUTH_USER_KEY);
         }
 
-        setUser(authUser);
+        throw lastError ?? new Error('Login failed. Please try again.');
 
-        console.info('[auth] api login success, redirecting to /admin/dashboard');
-
-        if (typeof window !== 'undefined') {
-          window.location.assign('/admin/dashboard');
-        }
-
-        return true;
       }
 
       if (

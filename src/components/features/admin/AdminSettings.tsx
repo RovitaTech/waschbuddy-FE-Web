@@ -28,6 +28,91 @@ interface AdminSettingsProps {
   location: { city: string; dorm: string | 'all'; cityId?: string; dormId?: string };
 }
 
+type SettingsSource = {
+  maxReservationTime?: number;
+  cleaningInterval?: number;
+  startTime?: string;
+  endTime?: string;
+  maxQueues?: number;
+  maxFutureReservationDays?: number;
+  maintenanceMode?: boolean;
+  autoApproveUsers?: boolean;
+  cancellationWindow?: number;
+  reservationPrice?: number;
+};
+
+type SettingsApiResponse = {
+  settings?: SettingsSource & {
+    citySpecificSettings?: Record<string, SettingsSource>;
+    dormSpecificSettings?: Record<string, SettingsSource>;
+  };
+  citySettings?: SettingsSource;
+  dormSpecificSettings?: Record<string, SettingsSource>;
+};
+
+const resolveSettingsScope = (
+  response: SettingsApiResponse | null,
+  location: AdminSettingsProps['location']
+): SettingsSource | null => {
+  if (!response) return null;
+
+  const globalSettings = response.settings ?? null;
+
+  if (location.dormId) {
+    return (
+      response.dormSpecificSettings?.[location.dormId] ??
+      globalSettings?.dormSpecificSettings?.[location.dormId] ??
+      globalSettings
+    ) as SettingsSource | null;
+  }
+
+  if (location.cityId) {
+    return (
+      response.citySettings ??
+      globalSettings?.citySpecificSettings?.[location.cityId] ??
+      globalSettings
+    ) as SettingsSource | null;
+  }
+
+  return globalSettings;
+};
+
+const applyResolvedSettings = (
+  prev: any,
+  source: SettingsSource | null | undefined,
+  location: AdminSettingsProps['location']
+) => ({
+  ...prev,
+  system: {
+    ...prev.system,
+    maintenanceMode: source?.maintenanceMode ?? prev.system.maintenanceMode,
+    autoApproveUsers: source?.autoApproveUsers ?? prev.system.autoApproveUsers,
+    maxReservationTime: String(source?.maxReservationTime ?? prev.system.maxReservationTime),
+    cleaningInterval: String(source?.cleaningInterval ?? prev.system.cleaningInterval),
+    maintenanceNotice: {
+      ...prev.system.maintenanceNotice,
+      cityId: location.cityId ?? prev.system.maintenanceNotice.cityId,
+      allDormsInCity: location.dorm === 'all',
+      dormIds: location.dorm === 'all'
+        ? []
+        : location.dormId
+          ? [location.dormId]
+          : prev.system.maintenanceNotice.dormIds,
+    },
+  },
+  business: {
+    ...prev.business,
+    maxFutureReservationDays: String(source?.maxFutureReservationDays ?? prev.business.maxFutureReservationDays),
+    maxNumberOfQueues: String(source?.maxQueues ?? prev.business.maxNumberOfQueues),
+    cancellationWindow: String(source?.cancellationWindow ?? prev.business.cancellationWindow),
+    reservationPrice: String(source?.reservationPrice ?? prev.business.reservationPrice),
+    operatingHours: {
+      start: source?.startTime ?? prev.business.operatingHours.start,
+      end: source?.endTime ?? prev.business.operatingHours.end,
+    }
+  }
+});
+
 export function AdminSettings({ location }: AdminSettingsProps) {
   // Settings state from API
   const [apiSettings, setApiSettings] = useState<any>(null);
@@ -55,7 +140,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       maintenanceMode: false,
       autoApproveUsers: false,
       maxReservationTime: '60',
-      cleaningInterval: '120',
+      cleaningInterval: '15',
       maintenanceNotice: {
         title: 'Maintenance Notice',
         message: 'System will be under maintenance from 2 AM to 4 AM today.',
@@ -71,8 +156,8 @@ export function AdminSettings({ location }: AdminSettingsProps) {
     business: {
       reservationPrice: '2.50',
       cancellationWindow: '15',
-      maxFutureReservationDays: '30',
-      maxNumberOfQueues: '5',
+      maxFutureReservationDays: '0',
+      maxNumberOfQueues: '1',
       operatingHours: {
         start: '06:00',
         end: '23:00'
@@ -83,6 +168,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
   const [customMessage, setCustomMessage] = useState('');
   const [systemMessageGlobal, setSystemMessageGlobal] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showMaxReservationAlert, setShowMaxReservationAlert] = useState(false);
 
   // Load cities and dorms on mount
   useEffect(() => {
@@ -108,32 +194,20 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       try {
         setIsLoadingSettings(true);
         setSettingsError(null);
-        const data = await settingsService.getAllSettings(location.cityId, location.dormId);
+        // If a dorm is selected, load dorm-specific settings (do not send cityId)
+        let data: any = null;
+        if (location.dormId) {
+          // Request dorm settings using query param: /clients/settings?dormId=...
+          data = await settingsService.getAllSettings(undefined, location.dormId);
+        } else {
+          data = await settingsService.getAllSettings(location.cityId);
+        }
         setApiSettings(data);
+
+        const resolvedSettings = resolveSettingsScope(data, location);
         
-        // Map API data to local state (simplified mapping)
-        if (data) {
-          setSettings(prev => ({
-            ...prev,
-            system: {
-              ...prev.system,
-              maxReservationTime: String(data.maxReservationTime || 60),
-              cleaningInterval: String(data.cleaningInterval || 120),
-              maintenanceMode: data.maintenanceMode || false,
-              autoApproveUsers: data.autoApproveUsers || false,
-            },
-            business: {
-              ...prev.business,
-              maxFutureReservationDays: String(data.maxFutureReservationDays || 30),
-              maxNumberOfQueues: String(data.maxQueues || 5),
-              cancellationWindow: String(data.cancellationWindow || 15),
-              reservationPrice: String(data.reservationPrice || 2.50),
-              operatingHours: {
-                start: data.startTime || '06:00',
-                end: data.endTime || '23:00'
-              }
-            }
-          }));
+        if (resolvedSettings) {
+          setSettings(prev => applyResolvedSettings(prev, resolvedSettings, location));
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -156,6 +230,15 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         [setting]: value
       }
     }));
+  };
+
+  const handleMaxFutureReservationChange = (value: string) => {
+    const numValue = parseInt(value);
+    if (numValue > 7) {
+      setShowMaxReservationAlert(true);
+      return;
+    }
+    handleSettingChange('business', 'maxFutureReservationDays', value);
   };
 
   const handleSave = async () => {
@@ -183,10 +266,23 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       // Add location targeting
       if (location.dorm === 'all') {
         if (location.cityId) {
-          payload.cityId = location.cityId;
+          // When a city is selected in the dropdown, send the cityId and keep dormIds empty.
+          try {
+            const dormsData = await overviewService.getDorms({ cityId: location.cityId });
+            const dormIds = (dormsData || []).map((d: any) => d.id || d.dormId).filter(Boolean);
+            payload.cityId = location.cityId;
+            payload.dormIds = [];
+            console.log('Loaded dorms for selected city:', dormIds);
+          } catch (err) {
+            console.error('Failed to load dorms for city while saving settings:', err);
+            // Fallback to empty array if fetch fails
+            payload.cityId = location.cityId;
+            payload.dormIds = [];
+          }
+        } else {
+          // No cityId available — send an empty dormIds array as backend expects
+          payload.dormIds = [];
         }
-        // Backend expects an array for dormIds even when applying to whole city
-        payload.dormIds = [];
       } else {
         // Resolve dormIds to UUIDs
         let resolvedDormIds: string[] = [];
@@ -219,13 +315,26 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       console.groupEnd();
 
       const result = await settingsService.updateAllDorms(payload);
-
       const successMsg = (result && (result.message || result.status === 'ok')) ? (result.message || 'Settings updated') : 'Settings saved successfully!';
       const affected = result?.affectedDorms?.length;
 
       toast.success(successMsg, {
         description: affected ? `Applied to ${affected} dorm(s)` : undefined,
       });
+
+      // Refresh settings from server so UI reflects latest values
+      try {
+        const refreshed = await settingsService.getAllSettings(location.dormId ? undefined : location.cityId, location.dormId);
+        if (refreshed) {
+          setApiSettings(refreshed);
+          const resolvedSettings = resolveSettingsScope(refreshed, location);
+          if (resolvedSettings) {
+            setSettings(prev => applyResolvedSettings(prev, resolvedSettings, location));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to refresh settings after save:', err);
+      }
     } catch (error) {
       console.error('Error saving settings:', error);
       const backendMsg = (error as any)?.responseBody?.message || (error as any)?.message;
@@ -510,13 +619,21 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="cleaning-interval">Cleaning Interval (minutes)</Label>
-              <Input
-                id="cleaning-interval"
-                type="number"
+              <Select
                 value={settings.system.cleaningInterval}
-                onChange={(e) => handleSettingChange('system', 'cleaningInterval', e.target.value)}
+                onValueChange={(value) => handleSettingChange('system', 'cleaningInterval', value)}
                 disabled={isLoadingSettings}
-              />
+              >
+                <SelectTrigger id="cleaning-interval">
+                  <SelectValue placeholder="Select cleaning interval" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 minutes</SelectItem>
+                  <SelectItem value="30">30 minutes</SelectItem>
+                  <SelectItem value="45">45 minutes</SelectItem>
+                  <SelectItem value="60">60 minutes</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
@@ -734,23 +851,41 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="max-future-reservation-days">Max Future Reservation Days</Label>
-              <Input
-                id="max-future-reservation-days"
-                type="number"
+              <Select
                 value={settings.business.maxFutureReservationDays}
-                onChange={(e) => handleSettingChange('business', 'maxFutureReservationDays', e.target.value)}
+                onValueChange={handleMaxFutureReservationChange}
                 disabled={isLoadingSettings}
-              />
+              >
+                <SelectTrigger id="max-future-reservation-days">
+                  <SelectValue placeholder="Select max days" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((day) => (
+                    <SelectItem key={day} value={String(day)}>
+                      {day} day{day !== 1 ? 's' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="max-number-of-queues">Max Number of Queues</Label>
-              <Input
-                id="max-number-of-queues"
-                type="number"
+              <Select
                 value={settings.business.maxNumberOfQueues}
-                onChange={(e) => handleSettingChange('business', 'maxNumberOfQueues', e.target.value)}
+                onValueChange={(value) => handleSettingChange('business', 'maxNumberOfQueues', value)}
                 disabled={isLoadingSettings}
-              />
+              >
+                <SelectTrigger id="max-number-of-queues">
+                  <SelectValue placeholder="Select max queues" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5].map((queue) => (
+                    <SelectItem key={queue} value={String(queue)}>
+                      {queue}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Operating Hours</Label>
@@ -864,6 +999,21 @@ export function AdminSettings({ location }: AdminSettingsProps) {
             {isResetting ? 'Resetting...' : 'Reset Settings'}
           </AlertDialogAction>
           <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Max Future Reservation Days Validation Alert */}
+      <AlertDialog open={showMaxReservationAlert} onOpenChange={setShowMaxReservationAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invalid Value</AlertDialogTitle>
+            <AlertDialogDescription>
+              Future reservation can be done up to 7 days only.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogAction onClick={() => setShowMaxReservationAlert(false)}>
+            OK
+          </AlertDialogAction>
         </AlertDialogContent>
       </AlertDialog>
     </div>

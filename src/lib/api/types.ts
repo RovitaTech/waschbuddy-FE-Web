@@ -2,6 +2,7 @@
 
 export interface ApiRequestOptions extends RequestInit {
   timeout?: number;
+  skipAuth?: boolean;
 }
 
 export interface ApiError {
@@ -29,9 +30,15 @@ export interface LoginResponse {
   success: boolean;
   token?: string;
   accessToken?: string;
+  access_token?: string;
+  refresh_token?: string;
+  refreshToken?: string;
   data?: {
     token?: string;
     accessToken?: string;
+    access_token?: string;
+    refresh_token?: string;
+    refreshToken?: string;
     user?: {
       email?: string;
       role?: string;
@@ -63,6 +70,12 @@ export interface CreateCountryRequest {
   name: string;
   code: string;
   dialCode: string;
+}
+
+export interface CreateClientRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 export interface City {

@@ -117,6 +117,7 @@ export interface AuthCredentials {
   email: string;
   password: string;
   dataSource?: 'dummy' | 'api';
+  isSuperAdmin?: boolean;
 }
 
 export interface AuthUser {
