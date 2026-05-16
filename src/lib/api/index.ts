@@ -20,14 +20,6 @@ export async function apiFetch(input: RequestInfo | URL, init: ApiRequestOptions
 		headers,
 	});
 
-	if (response.status === 401 && typeof window !== 'undefined') {
-		console.warn('[api] received 401, clearing localStorage and redirecting to /');
-		window.localStorage.clear();
-		if (window.location.pathname !== '/') {
-			window.location.assign('/');
-		}
-	}
-
 	return response;
 }
 

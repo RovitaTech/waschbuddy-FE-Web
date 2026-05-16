@@ -1,6 +1,8 @@
 import { getApiBaseUrl } from '@/lib/config/environment';
 import type { ApiRequestOptions } from './types';
 import { apiFetch } from './index';
+import { ENDPOINTS } from './endpoints';
+import { clearAuthToken, getAuthToken, getRefreshToken, setAuthToken, setRefreshToken } from './authToken';
 
 export const API_BASE_URL = getApiBaseUrl();
 
@@ -56,6 +58,59 @@ const now = (): number => {
   return Date.now();
 };
 
+let refreshPromise: Promise<boolean> | null = null;
+
+const refreshAccessToken = async (): Promise<boolean> => {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const refreshToken = getRefreshToken();
+
+    if (!refreshToken) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${ENDPOINTS.AUTH.REFRESH_TOKEN}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const nextAccessToken = payload?.access_token ?? payload?.accessToken ?? payload?.token ?? payload?.data?.access_token ?? payload?.data?.accessToken ?? payload?.data?.token;
+      const nextRefreshToken = payload?.refresh_token ?? payload?.refreshToken ?? payload?.data?.refresh_token ?? payload?.data?.refreshToken;
+
+      if (typeof nextAccessToken === 'string' && nextAccessToken) {
+        setAuthToken(nextAccessToken);
+      }
+
+      if (typeof nextRefreshToken === 'string' && nextRefreshToken) {
+        setRefreshToken(nextRefreshToken);
+      }
+
+      return typeof nextAccessToken === 'string' && nextAccessToken.length > 0;
+    } catch {
+      return false;
+    }
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+};
+
 export async function apiRequest<T>(
   endpoint: string,
   options: ApiRequestOptions = {},
@@ -81,10 +136,31 @@ export async function apiRequest<T>(
   }
   console.groupEnd();
 
-  const response = await apiFetch(url, {
+  let response = await apiFetch(url, {
     ...options,
     headers,
   });
+
+  if (response.status === 401 && !options.skipAuth) {
+    const refreshed = await refreshAccessToken();
+
+    if (refreshed) {
+      const retryHeaders = new Headers(options.headers ?? {});
+      if (!retryHeaders.has('Content-Type') && options.body) {
+        retryHeaders.set('Content-Type', 'application/json');
+      }
+
+      const renewedToken = getAuthToken();
+      if (renewedToken) {
+        retryHeaders.set('Authorization', `Bearer ${renewedToken}`);
+      }
+
+      response = await apiFetch(url, {
+        ...options,
+        headers: retryHeaders,
+      });
+    }
+  }
 
   const contentType = response.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
@@ -113,6 +189,13 @@ export async function apiRequest<T>(
     console.debug('responseHeaders:', responseHeaders);
     console.debug('responseBody:', responseBody);
     console.groupEnd();
+
+    if (response.status === 401 && typeof window !== 'undefined') {
+      clearAuthToken();
+      if (window.location.pathname !== '/') {
+        window.location.assign('/');
+      }
+    }
 
     throw new ApiHttpError(message, response.status, responseBody);
   }

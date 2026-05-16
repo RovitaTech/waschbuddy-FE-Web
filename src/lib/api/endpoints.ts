@@ -13,6 +13,7 @@ export const ENDPOINTS = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
     SET_PASSWORD: '/auth/set-password',
+    REFRESH_TOKEN: '/auth/refresh-token',
   },
   SUPER_ADMIN: {
     // Users / clients

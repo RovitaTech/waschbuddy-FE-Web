@@ -30,9 +30,15 @@ export interface LoginResponse {
   success: boolean;
   token?: string;
   accessToken?: string;
+  access_token?: string;
+  refresh_token?: string;
+  refreshToken?: string;
   data?: {
     token?: string;
     accessToken?: string;
+    access_token?: string;
+    refresh_token?: string;
+    refreshToken?: string;
     user?: {
       email?: string;
       role?: string;

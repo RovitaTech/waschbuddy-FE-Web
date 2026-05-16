@@ -4,7 +4,7 @@ import { dummyLoginCredentials } from '@/dummy-data';
 import { DataSource, getStoredDataSource, setStoredDataSource } from '@/lib/config/dataSource';
 import { getApiBaseUrl } from '@/lib/config/environment';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { clearAuthToken, setAuthToken } from '@/lib/api/authToken';
+import { clearAuthToken, setAuthToken, setRefreshToken } from '@/lib/api/authToken';
 
 const AUTH_USER_KEY = 'authUser';
 
@@ -57,6 +57,7 @@ export function useAuth() {
     }
 
     const token = payload?.access_token ?? payload?.token ?? payload?.accessToken ?? null;
+    const refreshToken = payload?.refresh_token ?? payload?.refreshToken ?? null;
     const apiUser = payload?.user ?? null;
 
     if (!token || typeof token !== 'string') {
@@ -75,7 +76,7 @@ export function useAuth() {
       role: apiUser.role,
     };
 
-    return { token, authUser };
+    return { token, refreshToken, authUser };
   }, []);
 
   const redirectAfterLogin = useCallback((authUser: AuthUser) => {
@@ -113,10 +114,13 @@ export function useAuth() {
           try {
             console.info('[auth] api login request', { endpoint: `${getApiBaseUrl()}${endpoint}` });
 
-            const { token, authUser } = await performLoginRequest(endpoint, credentials);
+            const { token, refreshToken, authUser } = await performLoginRequest(endpoint, credentials);
 
             clearAuthToken();
             setAuthToken(token);
+            if (refreshToken) {
+              setRefreshToken(refreshToken);
+            }
 
             if (typeof window !== 'undefined') {
               window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));

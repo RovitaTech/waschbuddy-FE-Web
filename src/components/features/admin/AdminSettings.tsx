@@ -28,6 +28,91 @@ interface AdminSettingsProps {
   location: { city: string; dorm: string | 'all'; cityId?: string; dormId?: string };
 }
 
+type SettingsSource = {
+  maxReservationTime?: number;
+  cleaningInterval?: number;
+  startTime?: string;
+  endTime?: string;
+  maxQueues?: number;
+  maxFutureReservationDays?: number;
+  maintenanceMode?: boolean;
+  autoApproveUsers?: boolean;
+  cancellationWindow?: number;
+  reservationPrice?: number;
+};
+
+type SettingsApiResponse = {
+  settings?: SettingsSource & {
+    citySpecificSettings?: Record<string, SettingsSource>;
+    dormSpecificSettings?: Record<string, SettingsSource>;
+  };
+  citySettings?: SettingsSource;
+  dormSpecificSettings?: Record<string, SettingsSource>;
+};
+
+const resolveSettingsScope = (
+  response: SettingsApiResponse | null,
+  location: AdminSettingsProps['location']
+): SettingsSource | null => {
+  if (!response) return null;
+
+  const globalSettings = response.settings ?? null;
+
+  if (location.dormId) {
+    return (
+      response.dormSpecificSettings?.[location.dormId] ??
+      globalSettings?.dormSpecificSettings?.[location.dormId] ??
+      globalSettings
+    ) as SettingsSource | null;
+  }
+
+  if (location.cityId) {
+    return (
+      response.citySettings ??
+      globalSettings?.citySpecificSettings?.[location.cityId] ??
+      globalSettings
+    ) as SettingsSource | null;
+  }
+
+  return globalSettings;
+};
+
+const applyResolvedSettings = (
+  prev: any,
+  source: SettingsSource | null | undefined,
+  location: AdminSettingsProps['location']
+) => ({
+  ...prev,
+  system: {
+    ...prev.system,
+    maintenanceMode: source?.maintenanceMode ?? prev.system.maintenanceMode,
+    autoApproveUsers: source?.autoApproveUsers ?? prev.system.autoApproveUsers,
+    maxReservationTime: String(source?.maxReservationTime ?? prev.system.maxReservationTime),
+    cleaningInterval: String(source?.cleaningInterval ?? prev.system.cleaningInterval),
+    maintenanceNotice: {
+      ...prev.system.maintenanceNotice,
+      cityId: location.cityId ?? prev.system.maintenanceNotice.cityId,
+      allDormsInCity: location.dorm === 'all',
+      dormIds: location.dorm === 'all'
+        ? []
+        : location.dormId
+          ? [location.dormId]
+          : prev.system.maintenanceNotice.dormIds,
+    },
+  },
+  business: {
+    ...prev.business,
+    maxFutureReservationDays: String(source?.maxFutureReservationDays ?? prev.business.maxFutureReservationDays),
+    maxNumberOfQueues: String(source?.maxQueues ?? prev.business.maxNumberOfQueues),
+    cancellationWindow: String(source?.cancellationWindow ?? prev.business.cancellationWindow),
+    reservationPrice: String(source?.reservationPrice ?? prev.business.reservationPrice),
+    operatingHours: {
+      start: source?.startTime ?? prev.business.operatingHours.start,
+      end: source?.endTime ?? prev.business.operatingHours.end,
+    }
+  }
+});
+
 export function AdminSettings({ location }: AdminSettingsProps) {
   // Settings state from API
   const [apiSettings, setApiSettings] = useState<any>(null);
@@ -118,30 +203,11 @@ export function AdminSettings({ location }: AdminSettingsProps) {
           data = await settingsService.getAllSettings(location.cityId);
         }
         setApiSettings(data);
+
+        const resolvedSettings = resolveSettingsScope(data, location);
         
-        // Map API data to local state (simplified mapping)
-        if (data) {
-          setSettings(prev => ({
-            ...prev,
-            system: {
-              ...prev.system,
-              maxReservationTime: String(data.maxReservationTime || 60),
-              cleaningInterval: String(data.cleaningInterval || 15),
-              maintenanceMode: data.maintenanceMode || false,
-              autoApproveUsers: data.autoApproveUsers || false,
-            },
-            business: {
-              ...prev.business,
-              maxFutureReservationDays: String(data.maxFutureReservationDays || 0),
-              maxNumberOfQueues: String(data.maxQueues || 1),
-              cancellationWindow: String(data.cancellationWindow || 15),
-              reservationPrice: String(data.reservationPrice || 2.50),
-              operatingHours: {
-                start: data.startTime || '06:00',
-                end: data.endTime || '23:00'
-              }
-            }
-          }));
+        if (resolvedSettings) {
+          setSettings(prev => applyResolvedSettings(prev, resolvedSettings, location));
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -200,15 +266,17 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       // Add location targeting
       if (location.dorm === 'all') {
         if (location.cityId) {
-          // When a city is selected in the dropdown, fetch all dorms for that city
-          // and send their IDs in `dormIds`. Do NOT include `cityId` in the body.
+          // When a city is selected in the dropdown, send the cityId and keep dormIds empty.
           try {
             const dormsData = await overviewService.getDorms({ cityId: location.cityId });
             const dormIds = (dormsData || []).map((d: any) => d.id || d.dormId).filter(Boolean);
-            payload.dormIds = dormIds;
+            payload.cityId = location.cityId;
+            payload.dormIds = [];
+            console.log('Loaded dorms for selected city:', dormIds);
           } catch (err) {
             console.error('Failed to load dorms for city while saving settings:', err);
             // Fallback to empty array if fetch fails
+            payload.cityId = location.cityId;
             payload.dormIds = [];
           }
         } else {
@@ -259,27 +327,10 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         const refreshed = await settingsService.getAllSettings(location.dormId ? undefined : location.cityId, location.dormId);
         if (refreshed) {
           setApiSettings(refreshed);
-          setSettings(prev => ({
-            ...prev,
-            system: {
-              ...prev.system,
-              maxReservationTime: String(refreshed.maxReservationTime ?? refreshed.settings?.maxReservationTime ?? prev.system.maxReservationTime),
-              cleaningInterval: String(refreshed.cleaningInterval ?? refreshed.settings?.cleaningInterval ?? prev.system.cleaningInterval),
-              maintenanceMode: refreshed.maintenanceMode ?? refreshed.settings?.maintenanceMode ?? prev.system.maintenanceMode,
-              autoApproveUsers: refreshed.autoApproveUsers ?? refreshed.settings?.autoApproveUsers ?? prev.system.autoApproveUsers,
-            },
-            business: {
-              ...prev.business,
-              maxFutureReservationDays: String(refreshed.maxFutureReservationDays ?? refreshed.settings?.maxFutureReservationDays ?? prev.business.maxFutureReservationDays),
-              maxNumberOfQueues: String(refreshed.maxQueues ?? refreshed.settings?.maxQueues ?? prev.business.maxNumberOfQueues),
-              cancellationWindow: String(refreshed.cancellationWindow ?? refreshed.settings?.cancellationWindow ?? prev.business.cancellationWindow),
-              reservationPrice: String(refreshed.reservationPrice ?? refreshed.settings?.reservationPrice ?? prev.business.reservationPrice),
-              operatingHours: {
-                start: (refreshed.startTime ?? refreshed.settings?.startTime ?? prev.business.operatingHours.start) as string,
-                end: (refreshed.endTime ?? refreshed.settings?.endTime ?? prev.business.operatingHours.end) as string,
-              }
-            }
-          }));
+          const resolvedSettings = resolveSettingsScope(refreshed, location);
+          if (resolvedSettings) {
+            setSettings(prev => applyResolvedSettings(prev, resolvedSettings, location));
+          }
         }
       } catch (err) {
         console.error('Failed to refresh settings after save:', err);
