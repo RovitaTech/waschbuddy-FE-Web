@@ -634,7 +634,10 @@ export const queryService = {
 // Settings Services
 export const settingsService = {
   getAllSettings: async (cityId?: string, dormId?: string): Promise<any> => {
-    const queryString = buildQueryString({ cityId, dormId });
+    // If a dormId is provided, only send dormId in the query string
+    // When a dorm is selected we must NOT include cityId in the request
+    const params: Record<string, string | undefined> = dormId ? { dormId } : { cityId };
+    const queryString = buildQueryString(params);
     return apiRequest<any>(`${ENDPOINTS.SETTINGS.GET_ALL}${queryString}`);
   },
 
