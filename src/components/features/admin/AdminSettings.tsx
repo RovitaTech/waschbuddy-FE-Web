@@ -261,6 +261,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         startTime: ensureTimeWithSeconds(settings.business.operatingHours.start),
         endTime: ensureTimeWithSeconds(settings.business.operatingHours.end),
         maintenanceMode: settings.system.maintenanceMode,
+        autoApproveUsers: settings.system.autoApproveUsers,
       };
 
       // Add location targeting
