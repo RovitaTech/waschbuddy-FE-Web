@@ -173,37 +173,6 @@ export function AdminSettings({ location }: AdminSettingsProps) {
     }
   });
 
-  // Local UI state
-  const [settings, setSettings] = useState({
-    system: {
-      maintenanceMode: false,
-      autoApproveUsers: false,
-      maxReservationTime: '60',
-      cleaningInterval: '15',
-      maintenanceNotice: {
-        title: 'Maintenance Notice',
-        message: 'System will be under maintenance from 2 AM to 4 AM today.',
-        startTime: '09:00',
-        endTime: '23:00',
-        startDate: todayDate,
-        endDate: todayDate,
-        cityId: location.city,
-        allDormsInCity: location.dorm === 'all',
-        dormIds: location.dorm === 'all' ? [] : [location.dorm]
-      }
-    },
-    business: {
-      reservationPrice: '2.50',
-      cancellationWindow: '15',
-      maxFutureReservationDays: '0',
-      maxNumberOfQueues: '1',
-      operatingHours: {
-        start: '06:00',
-        end: '23:00'
-      }
-    }
-  });
-
   const [customMessage, setCustomMessage] = useState('');
   const [systemMessageGlobal, setSystemMessageGlobal] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
