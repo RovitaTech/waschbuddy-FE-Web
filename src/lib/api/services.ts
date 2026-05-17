@@ -680,7 +680,18 @@ export const settingsService = {
       queryParams.append('cityId', params.cityId);
     }
     const url = `${ENDPOINTS.SETTINGS.GET_MAINTENANCE_MESSAGES}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-    return apiRequest<any[]>(url);
+    const response = await apiRequest<any>(url);
+    // Ensure response is always an array; handle wrapped responses
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (response?.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    if (response?.messages && Array.isArray(response.messages)) {
+      return response.messages;
+    }
+    return [];
   },
 
   addMaintenanceMessage: async (body: object): Promise<any> => {

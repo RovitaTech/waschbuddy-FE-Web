@@ -589,8 +589,10 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       setIsDeletingMessage(true);
       await settingsService.deleteMaintenanceMessage(messageId);
       
-      // Refresh the messages list
-      setMaintenanceMessages(maintenanceMessages.filter(m => m.id !== messageId));
+      // Refresh the messages list - ensure maintenanceMessages is an array
+      if (Array.isArray(maintenanceMessages)) {
+        setMaintenanceMessages(maintenanceMessages.filter(m => m.id !== messageId));
+      }
       toast.success('Maintenance message deleted');
     } catch (error) {
       console.error('Error deleting maintenance message:', error);
@@ -884,11 +886,11 @@ export function AdminSettings({ location }: AdminSettingsProps) {
                 </Button>
               </div>
 
-              {maintenanceMessages.length === 0 ? (
+              {!Array.isArray(maintenanceMessages) || maintenanceMessages.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No maintenance messages found for this scope.</p>
               ) : (
                 <div className="space-y-2">
-                  {maintenanceMessages.map((message) => (
+                  {(Array.isArray(maintenanceMessages) ? maintenanceMessages : []).map((message) => (
                     <div key={message.id} className="border rounded-lg overflow-hidden">
                       <button
                         onClick={() => setExpandedMessageId(expandedMessageId === message.id ? null : message.id)}
