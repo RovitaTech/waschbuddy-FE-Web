@@ -20,7 +20,11 @@ import {
   Save,
   RefreshCw,
   AlertCircle,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,6 +50,7 @@ type SettingsApiResponse = {
     citySpecificSettings?: Record<string, SettingsSource>;
     dormSpecificSettings?: Record<string, SettingsSource>;
   };
+  city?: { id: string };
   citySettings?: SettingsSource;
   dormSpecificSettings?: Record<string, SettingsSource>;
 };
@@ -57,6 +62,7 @@ const resolveSettingsScope = (
   if (!response) return null;
 
   const globalSettings = response.settings ?? null;
+  const responseCity = response.city?.id;
 
   if (location.dormId) {
     return (
@@ -66,10 +72,12 @@ const resolveSettingsScope = (
     ) as SettingsSource | null;
   }
 
-  if (location.cityId) {
+  if (location.cityId || responseCity) {
+    const cityId = location.cityId || responseCity;
     return (
+      response.citySpecificSettings?.[cityId] ??
+      globalSettings?.citySpecificSettings?.[cityId] ??
       response.citySettings ??
-      globalSettings?.citySpecificSettings?.[location.cityId] ??
       globalSettings
     ) as SettingsSource | null;
   }
@@ -170,7 +178,12 @@ export function AdminSettings({ location }: AdminSettingsProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showMaxReservationAlert, setShowMaxReservationAlert] = useState(false);
 
-  // Load cities and dorms on mount
+  // Maintenance messages viewing state
+  const [maintenanceMessages, setMaintenanceMessages] = useState<any[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [showMaintenanceMessagesPanel, setShowMaintenanceMessagesPanel] = useState(false);
+  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   useEffect(() => {
     const loadCities = async () => {
       try {
@@ -185,8 +198,14 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       }
     };
 
-    loadCities();
-  }, []);
+    if (settings.system.maintenanceMode) {
+      loadCities();
+    } else {
+      // Clear previously loaded cities/dorms when maintenance is turned off
+      setCities([]);
+      setAllDorms([]);
+    }
+  }, [settings.system.maintenanceMode]);
 
   // Load settings on mount and when location changes
   useEffect(() => {
@@ -261,6 +280,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         startTime: ensureTimeWithSeconds(settings.business.operatingHours.start),
         endTime: ensureTimeWithSeconds(settings.business.operatingHours.end),
         maintenanceMode: settings.system.maintenanceMode,
+        autoApproveUsers: settings.system.autoApproveUsers,
       };
 
       // Add location targeting
@@ -458,25 +478,25 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         return;
       }
       
-      // Combine date and time into ISO datetime strings
-      const start = `${notice.startDate}T${notice.startTime}:00`;
-      const end = `${notice.endDate}T${notice.endTime}:00`;
-      
-      // Build targeting - try with just dormIds or cityId
-      const targeting: any = {};
-      if (notice.allDormsInCity && notice.cityId) {
-        targeting.cityId = notice.cityId;
-      } else if (notice.dormIds.length > 0) {
-        targeting.dormIds = notice.dormIds;
-      }
-
+      // Build payload using backend-expected fields
       const payload: any = {
         title: notice.title,
         message: notice.message,
-        start,
-        end,
-        ...targeting
+        // Backend expects separate date and time fields
+        startTime: notice.startTime, // HH:MM
+        endTime: notice.endTime,     // HH:MM
+        startDate: notice.startDate, // YYYY-MM-DD
+        endDate: notice.endDate,     // YYYY-MM-DD
       };
+
+      // Targeting: when applying to entire city, include `cityId` and send empty `dormIds`.
+      // When specific dorms are selected, include only `dormIds` and omit `cityId`.
+      if (notice.allDormsInCity && notice.cityId) {
+        payload.cityId = notice.cityId;
+        payload.dormIds = [];
+      } else if (notice.dormIds && notice.dormIds.length > 0) {
+        payload.dormIds = notice.dormIds;
+      }
 
       console.group('Sending Maintenance Notice');
       console.log('Payload:', payload);
@@ -537,6 +557,49 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       : currentDorms.filter(d => d !== dorm);
 
     handleMaintenanceNoticeChange('dormIds', nextDorms);
+  };
+
+  const handleLoadMaintenanceMessages = async () => {
+    try {
+      setIsLoadingMessages(true);
+      const params: any = {};
+      
+      // Get current scope from settings
+      const notice = settings.system.maintenanceNotice;
+      
+      if (notice.allDormsInCity && notice.cityId) {
+        params.cityId = notice.cityId;
+      } else if (notice.dormIds && notice.dormIds.length > 0) {
+        params.dormIds = notice.dormIds;
+      }
+
+      const messages = await settingsService.getMaintenanceMessages(params);
+      setMaintenanceMessages(messages || []);
+      setShowMaintenanceMessagesPanel(true);
+    } catch (error) {
+      console.error('Error loading maintenance messages:', error);
+      toast.error('Failed to load maintenance messages');
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  const handleDeleteMaintenanceMessage = async (messageId: string) => {
+    try {
+      setIsDeletingMessage(true);
+      await settingsService.deleteMaintenanceMessage(messageId);
+      
+      // Refresh the messages list - ensure maintenanceMessages is an array
+      if (Array.isArray(maintenanceMessages)) {
+        setMaintenanceMessages(maintenanceMessages.filter(m => m.id !== messageId));
+      }
+      toast.success('Maintenance message deleted');
+    } catch (error) {
+      console.error('Error deleting maintenance message:', error);
+      toast.error('Failed to delete maintenance message');
+    } finally {
+      setIsDeletingMessage(false);
+    }
   };
 
   if (!location.cityId) {
@@ -738,7 +801,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="">No cities available</SelectItem>
+                        <SelectItem value="__no_cities__" disabled>No cities available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -792,12 +855,119 @@ export function AdminSettings({ location }: AdminSettingsProps) {
                   </div>
                 )}
 
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                   <Button onClick={handleSendMaintenanceNotice} className="w-full">
                     Send Maintenance Notice
                   </Button>
+                  <Button 
+                    onClick={handleLoadMaintenanceMessages}
+                    variant="outline"
+                    disabled={isLoadingMessages}
+                    className="w-full"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    {isLoadingMessages ? 'Loading...' : 'View All Maintenance'}
+                  </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {showMaintenanceMessagesPanel && (
+            <div className="rounded-lg border p-4 space-y-3 bg-blue-50/30">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Maintenance Messages</h4>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowMaintenanceMessagesPanel(false)}
+                >
+                  Close
+                </Button>
+              </div>
+
+              {!Array.isArray(maintenanceMessages) || maintenanceMessages.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No maintenance messages found for this scope.</p>
+              ) : (
+                <div className="space-y-2">
+                  {(Array.isArray(maintenanceMessages) ? maintenanceMessages : []).map((message) => (
+                    <div key={message.id} className="border rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedMessageId(expandedMessageId === message.id ? null : message.id)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{message.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {message.startDate} {message.startTime} - {message.endDate} {message.endTime}
+                          </p>
+                        </div>
+                        {expandedMessageId === message.id ? (
+                          <ChevronUp className="h-4 w-4 ml-2" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        )}
+                      </button>
+
+                      {expandedMessageId === message.id && (
+                        <div className="bg-muted/30 p-4 border-t space-y-4">
+                          <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Title</Label>
+                            <p className="text-sm font-medium mt-1">{message.title || '-'}</p>
+                          </div>
+
+                          <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Message</Label>
+                            <p className="text-sm mt-1 whitespace-pre-wrap text-foreground">{message.message}</p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">Start Date</Label>
+                              <p className="text-sm font-medium">{message.startDate || '-'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">End Date</Label>
+                              <p className="text-sm font-medium">{message.endDate || '-'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">Start Time</Label>
+                              <p className="text-sm font-medium">{message.startTime || '-'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">End Time</Label>
+                              <p className="text-sm font-medium">{message.endTime || '-'}</p>
+                            </div>
+                          </div>
+
+                          {(message.cityId || message.dormIds?.length > 0) && (
+                            <div className="border-t pt-3 space-y-2">
+                              <Label className="text-xs font-semibold text-muted-foreground">Target Scope</Label>
+                              {message.cityId && <p className="text-sm">City ID: {message.cityId}</p>}
+                              {message.dormIds && message.dormIds.length > 0 && (
+                                <p className="text-sm">Dorms: {message.dormIds.join(', ')}</p>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteMaintenanceMessage(message.id)}
+                              disabled={isDeletingMessage}
+                              className="flex-1"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           

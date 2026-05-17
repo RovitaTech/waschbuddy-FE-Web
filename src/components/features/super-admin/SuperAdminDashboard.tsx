@@ -485,6 +485,7 @@ export function SuperAdminDashboard({ onLogout }: SuperAdminDashboardProps) {
               alt="WASCHBUDDY"
               width={190}
               height={60}
+              loading="eager"
               className="h-12 w-auto"
             />
             <div className="hidden md:block">

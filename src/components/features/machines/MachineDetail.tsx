@@ -10,7 +10,6 @@ import { Skeleton } from '../../ui/skeleton';
 import { 
   ArrowLeft, 
   WashingMachine, 
-  Calendar, 
   Clock, 
   AlertTriangle, 
   CheckCircle,
@@ -46,6 +45,15 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
     model: '',
     serialNumber: '',
     installationDate: ''
+  });
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [maintenanceForm, setMaintenanceForm] = useState({
+    title: '',
+    message: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    startTime: '02:00',
+    endTime: '04:00'
   });
 
   const mapApiStatusToUiStatus = (status?: string): Machine['status'] => {
@@ -95,7 +103,7 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
       lastMaintenance: apiMachine.lastMaintenanceDate ?? apiMachine.updatedAt ?? apiMachine.createdAt ?? new Date().toISOString(),
       totalCycles: 0,
       model: apiMachine.model ?? 'Unknown model'
-    };
+    } as Machine;
   };
 
   useEffect(() => {
@@ -413,167 +421,238 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Machine Details */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Settings className="h-5 w-5" />
-                <span>Machine Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="machine-name">Machine Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="machine-name"
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      className="mt-1"
-                      disabled={isSaving}
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-muted rounded">{machine.name}</p>
-                  )}
+          {showMaintenanceForm ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Wrench className="h-5 w-5" />
+                  <span>Schedule Maintenance</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input value={maintenanceForm.title} onChange={(e) => setMaintenanceForm({ ...maintenanceForm, title: e.target.value })} />
                 </div>
-                
-                <div>
-                  <Label htmlFor="machine-type">Type</Label>
-                  <p className="mt-1 p-2 bg-muted rounded capitalize">{machine.type}</p>
+                <div className="space-y-2">
+                  <Label>Message</Label>
+                  <Textarea value={maintenanceForm.message} onChange={(e) => setMaintenanceForm({ ...maintenanceForm, message: e.target.value })} rows={3} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Start Date</Label>
+                    <Input type="date" value={maintenanceForm.startDate} onChange={(e) => setMaintenanceForm({ ...maintenanceForm, startDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>End Date</Label>
+                    <Input type="date" value={maintenanceForm.endDate} onChange={(e) => setMaintenanceForm({ ...maintenanceForm, endDate: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Start Time</Label>
+                    <Input type="time" value={maintenanceForm.startTime} onChange={(e) => setMaintenanceForm({ ...maintenanceForm, startTime: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>End Time</Label>
+                    <Input type="time" value={maintenanceForm.endTime} onChange={(e) => setMaintenanceForm({ ...maintenanceForm, endTime: e.target.value })} />
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="ghost" onClick={() => setShowMaintenanceForm(false)}>Cancel</Button>
+                  <Button onClick={async () => {
+                    // validate required fields
+                    const { title, message, startDate, endDate, startTime, endTime } = maintenanceForm;
+                    if (!title || !message || !startDate || !endDate || !startTime || !endTime) {
+                      toast.error('All fields are required');
+                      return;
+                    }
+                    try {
+                      const payload = {
+                        title,
+                        message,
+                        machineId: machineId,
+                        startDate,
+                        endDate,
+                        startTime,
+                        endTime,
+                      };
+                      await machineService.scheduleMaintenanceOnMachine(payload);
+                      toast.success('Maintenance scheduled');
+                      setShowMaintenanceForm(false);
+                    } catch (err) {
+                      console.error('Failed to schedule maintenance', err);
+                      toast.error('Failed to schedule maintenance');
+                    }
+                  }}>
+                    Confirm
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Settings className="h-5 w-5" />
+                  <span>Machine Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="machine-name">Machine Name</Label>
+                    {isEditing ? (
+                      <Input
+                        id="machine-name"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="mt-1"
+                        disabled={isSaving}
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-muted rounded">{machine.name}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="machine-type">Type</Label>
+                    <p className="mt-1 p-2 bg-muted rounded capitalize">{machine.type}</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="machine-number">Machine Number</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{getMachineNumberLabel(machine.machineNumber)}</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="machine-serial">Serial Number</Label>
+                    {isEditing ? (
+                      <Input
+                        id="machine-serial"
+                        value={editForm.serialNumber}
+                        onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
+                        className="mt-1"
+                        disabled={isSaving}
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.serialNumber)}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="machine-status">Status</Label>
+                    {isEditing ? (
+                      <Select value={editForm.status} onValueChange={(value) => setEditForm({ ...editForm, status: value })}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">Available</SelectItem>
+                          <SelectItem value="in_use">In Use</SelectItem>
+                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="out_of_order">Out of Order</SelectItem>
+                          <SelectItem value="offline">Offline</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="mt-1">
+                        <Badge className={`${getStatusColor(machine.status)} flex items-center space-x-2 w-fit`}>
+                          {getStatusIcon(machine.status)}
+                          <span className="capitalize">{machine.status.replace('_', ' ')}</span>
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="machine-model">Model</Label>
+                    {isEditing ? (
+                      <Input
+                        id="machine-model"
+                        value={editForm.model}
+                        onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+                        className="mt-1"
+                        disabled={isSaving}
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-muted rounded">{machine.model}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label>Location</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{machine.dorm}</p>
+                  </div>
+                  
+                  <div>
+                    <Label>City</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{machine.city}</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="machine-installation-date">Installation Date</Label>
+                    {isEditing ? (
+                      <Input
+                        id="machine-installation-date"
+                        type="date"
+                        value={editForm.installationDate}
+                        onChange={(e) => setEditForm({ ...editForm, installationDate: e.target.value })}
+                        className="mt-1"
+                        disabled={isSaving}
+                      />
+                    ) : (
+                      <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.installationDate ? new Date(machine.installationDate).toLocaleDateString() : undefined)}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label>Last Maintenance</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{machine.lastMaintenance}</p>
+                  </div>
+                  
+                  <div>
+                    <Label>Created At</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.createdAt ? new Date(machine.createdAt).toLocaleString() : undefined)}</p>
+                  </div>
+
+                  <div>
+                    <Label>Updated At</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.updatedAt ? new Date(machine.updatedAt).toLocaleString() : undefined)}</p>
+                  </div>
+
+                  <div>
+                    <Label>Maintenance Scheduled</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.maintenanceScheduled)}</p>
+                  </div>
+
+                  <div>
+                    <Label>Scheduled Window</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.scheduledWindow)}</p>
+                  </div>
+
+                  <div>
+                    <Label>Queue Count</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{typeof machine.queueCount === 'number' ? machine.queueCount : 'Not provided'}</p>
+                  </div>
+
+                  <div>
+                    <Label>Reserved</Label>
+                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.isReserved)}</p>
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="machine-number">Machine Number</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{getMachineNumberLabel(machine.machineNumber)}</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="machine-serial">Serial Number</Label>
-                  {isEditing ? (
-                    <Input
-                      id="machine-serial"
-                      value={editForm.serialNumber}
-                      onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
-                      className="mt-1"
-                      disabled={isSaving}
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.serialNumber)}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label htmlFor="machine-status">Status</Label>
-                  {isEditing ? (
-                    <Select value={editForm.status} onValueChange={(value) => setEditForm({ ...editForm, status: value })}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="in_use">In Use</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="out_of_order">Out of Order</SelectItem>
-                        <SelectItem value="offline">Offline</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="mt-1">
-                      <Badge className={`${getStatusColor(machine.status)} flex items-center space-x-2 w-fit`}>
-                        {getStatusIcon(machine.status)}
-                        <span className="capitalize">{machine.status.replace('_', ' ')}</span>
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <Label htmlFor="machine-model">Model</Label>
-                  {isEditing ? (
-                    <Input
-                      id="machine-model"
-                      value={editForm.model}
-                      onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
-                      className="mt-1"
-                      disabled={isSaving}
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-muted rounded">{machine.model}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label>Location</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{machine.dorm}</p>
-                </div>
-                
-                <div>
-                  <Label>City</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{machine.city}</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="machine-installation-date">Installation Date</Label>
-                  {isEditing ? (
-                    <Input
-                      id="machine-installation-date"
-                      type="date"
-                      value={editForm.installationDate}
-                      onChange={(e) => setEditForm({ ...editForm, installationDate: e.target.value })}
-                      className="mt-1"
-                      disabled={isSaving}
-                    />
-                  ) : (
-                    <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.installationDate ? new Date(machine.installationDate).toLocaleDateString() : undefined)}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label>Last Maintenance</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{machine.lastMaintenance}</p>
-                </div>
-                
-                <div>
-                  <Label>Created At</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.createdAt ? new Date(machine.createdAt).toLocaleString() : undefined)}</p>
-                </div>
-
-                <div>
-                  <Label>Updated At</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.updatedAt ? new Date(machine.updatedAt).toLocaleString() : undefined)}</p>
-                </div>
-
-                <div>
-                  <Label>Maintenance Scheduled</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.maintenanceScheduled)}</p>
-                </div>
-
-                <div>
-                  <Label>Scheduled Window</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.scheduledWindow)}</p>
-                </div>
-
-                <div>
-                  <Label>Queue Count</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{typeof machine.queueCount === 'number' ? machine.queueCount : 'Not provided'}</p>
-                </div>
-
-                <div>
-                  <Label>Reserved</Label>
-                  <p className="mt-1 p-2 bg-muted rounded">{getDisplayValue(machine.isReserved)}</p>
-                </div>
-              </div>
-
-              {machine.currentReservation && (
-                <div>
-                  <Label>Current Reservation</Label>
-                  <pre className="mt-1 p-3 bg-muted rounded text-xs overflow-auto">
-                    {JSON.stringify(machine.currentReservation, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {machine.currentReservation && (
+                  <div>
+                    <Label>Current Reservation</Label>
+                    <pre className="mt-1 p-3 bg-muted rounded text-xs overflow-auto">
+                      {JSON.stringify(machine.currentReservation, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Current Status Details */}
           {machine.status === 'in_use' && machine.currentUser && (
@@ -660,30 +739,7 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline">
-                <Wrench className="h-4 w-4 mr-2" />
-                Schedule Maintenance
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
-                View Reservations
-              </Button>
-              <Button 
-                className="w-full justify-start" 
-                variant="outline"
-                disabled={machine.status === 'offline'}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Reset Machine
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Quick Actions removed per request */}
           <div>
             <Button
               className="w-full justify-center mt-2"

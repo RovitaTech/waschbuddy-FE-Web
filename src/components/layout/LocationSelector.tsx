@@ -113,6 +113,7 @@ export function LocationSelector({ onLocationSelect }: LocationSelectorProps) {
               alt="WASCHBUDDY logo"
               width={320}
               height={100}
+              loading="eager"
               className="h-20 w-auto dark:hidden"
             />
             <Image
@@ -120,6 +121,7 @@ export function LocationSelector({ onLocationSelect }: LocationSelectorProps) {
               alt="WASCHBUDDY logo"
               width={320}
               height={100}
+              loading="eager"
               className="hidden h-20 w-auto dark:block"
             />
           </div>

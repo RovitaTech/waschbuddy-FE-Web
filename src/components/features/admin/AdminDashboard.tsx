@@ -280,6 +280,7 @@ export function AdminDashboard({ onLogout, location, onLocationChange, onBackToL
                 alt="WASCHBUDDY logo"
                 width={260}
                 height={80}
+                loading="eager"
                 className="h-14 w-auto md:h-16"
               />
             </div>

@@ -377,6 +377,14 @@ export const machineService = {
       method: 'DELETE'
     });
   }
+  ,
+  // Schedule maintenance for a single machine via the unified maintenance-messages endpoint
+  scheduleMaintenanceOnMachine: async (body: object): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_MAINTENANCE_MESSAGE, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  }
 };
 
 // User Management Services
@@ -663,6 +671,29 @@ export const settingsService = {
     return apiRequest<any[]>(ENDPOINTS.SETTINGS.ALL_DORMS_LIST);
   },
 
+  getMaintenanceMessages: async (params?: { dormIds?: string[]; cityId?: string }): Promise<any[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.dormIds && params.dormIds.length > 0) {
+      params.dormIds.forEach(dormId => queryParams.append('dormIds', dormId));
+    }
+    if (params?.cityId) {
+      queryParams.append('cityId', params.cityId);
+    }
+    const url = `${ENDPOINTS.SETTINGS.GET_MAINTENANCE_MESSAGES}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const response = await apiRequest<any>(url);
+    // Ensure response is always an array; handle wrapped responses
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (response?.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    if (response?.messages && Array.isArray(response.messages)) {
+      return response.messages;
+    }
+    return [];
+  },
+
   addMaintenanceMessage: async (body: object): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_MAINTENANCE_MESSAGE, {
       method: 'POST',
@@ -671,7 +702,8 @@ export const settingsService = {
   },
 
   addSingleMachineMaintenanceMessage: async (body: object): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_SINGLE_MACHINE_MAINTENANCE_MESSAGE, {
+    // Single-machine maintenance now uses the same endpoint as other maintenance messages.
+    return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_MAINTENANCE_MESSAGE, {
       method: 'POST',
       body: JSON.stringify(body)
     });
