@@ -463,25 +463,25 @@ export function AdminSettings({ location }: AdminSettingsProps) {
         return;
       }
       
-      // Combine date and time into ISO datetime strings
-      const start = `${notice.startDate}T${notice.startTime}:00`;
-      const end = `${notice.endDate}T${notice.endTime}:00`;
-      
-      // Build targeting - try with just dormIds or cityId
-      const targeting: any = {};
-      if (notice.allDormsInCity && notice.cityId) {
-        targeting.cityId = notice.cityId;
-      } else if (notice.dormIds.length > 0) {
-        targeting.dormIds = notice.dormIds;
-      }
-
+      // Build payload using backend-expected fields
       const payload: any = {
         title: notice.title,
         message: notice.message,
-        start,
-        end,
-        ...targeting
+        // Backend expects separate date and time fields
+        startTime: notice.startTime, // HH:MM
+        endTime: notice.endTime,     // HH:MM
+        startDate: notice.startDate, // YYYY-MM-DD
+        endDate: notice.endDate,     // YYYY-MM-DD
       };
+
+      // Targeting: when applying to entire city, include `cityId` and send empty `dormIds`.
+      // When specific dorms are selected, include only `dormIds` and omit `cityId`.
+      if (notice.allDormsInCity && notice.cityId) {
+        payload.cityId = notice.cityId;
+        payload.dormIds = [];
+      } else if (notice.dormIds && notice.dormIds.length > 0) {
+        payload.dormIds = notice.dormIds;
+      }
 
       console.group('Sending Maintenance Notice');
       console.log('Payload:', payload);
