@@ -10,7 +10,6 @@ import { Skeleton } from '../../ui/skeleton';
 import { 
   ArrowLeft, 
   WashingMachine, 
-  Calendar, 
   Clock, 
   AlertTriangle, 
   CheckCircle,
@@ -740,79 +739,7 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline">
-                <Wrench className="h-4 w-4 mr-2" />
-                Schedule Maintenance
-              </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    // Ask user for basic required fields. Use prompt for a quick UI.
-                    const title = window.prompt('Maintenance title', `Maintenance for ${machine?.name || 'machine'}`) || '';
-                    if (!title.trim()) {
-                      toast.error('Title is required');
-                      return;
-                    }
-                    const message = window.prompt('Maintenance message', 'Scheduled maintenance') || '';
-                    if (!message.trim()) {
-                      toast.error('Message is required');
-                      return;
-                    }
-                    const startDate = window.prompt('Start date (YYYY-MM-DD)', new Date().toISOString().split('T')[0]) || '';
-                    const endDate = window.prompt('End date (YYYY-MM-DD)', startDate) || '';
-                    const startTime = window.prompt('Start time (HH:MM)', '02:00') || '';
-                    const endTime = window.prompt('End time (HH:MM)', '04:00') || '';
-
-                    // Basic validation
-                    if (!startDate || !endDate || !startTime || !endTime) {
-                      toast.error('All schedule fields are required');
-                      return;
-                    }
-
-                    const payload = {
-                      title,
-                      message,
-                      machineId: machineId,
-                      startDate,
-                      endDate,
-                      startTime,
-                      endTime,
-                    };
-
-                    await machineService.scheduleMaintenanceOnMachine(payload);
-
-                    toast.success('Maintenance scheduled for machine');
-                  } catch (err) {
-                    console.error('Failed to schedule maintenance', err);
-                    toast.error('Failed to schedule maintenance');
-                  }
-                }}
-              >
-                <Wrench className="h-4 w-4 mr-2" />
-                Quick Schedule
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
-                View Reservations
-              </Button>
-              <Button 
-                className="w-full justify-start" 
-                variant="outline"
-                disabled={machine.status === 'offline'}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Reset Machine
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Quick Actions removed per request */}
           <div>
             <Button
               className="w-full justify-center mt-2"
