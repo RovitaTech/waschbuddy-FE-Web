@@ -377,6 +377,14 @@ export const machineService = {
       method: 'DELETE'
     });
   }
+  ,
+  // Schedule maintenance for a single machine via the unified maintenance-messages endpoint
+  scheduleMaintenanceOnMachine: async (body: object): Promise<any> => {
+    return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_MAINTENANCE_MESSAGE, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  }
 };
 
 // User Management Services
@@ -671,7 +679,8 @@ export const settingsService = {
   },
 
   addSingleMachineMaintenanceMessage: async (body: object): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_SINGLE_MACHINE_MAINTENANCE_MESSAGE, {
+    // Single-machine maintenance now uses the same endpoint as other maintenance messages.
+    return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_MAINTENANCE_MESSAGE, {
       method: 'POST',
       body: JSON.stringify(body)
     });
