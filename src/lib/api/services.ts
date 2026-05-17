@@ -671,6 +671,18 @@ export const settingsService = {
     return apiRequest<any[]>(ENDPOINTS.SETTINGS.ALL_DORMS_LIST);
   },
 
+  getMaintenanceMessages: async (params?: { dormIds?: string[]; cityId?: string }): Promise<any[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.dormIds && params.dormIds.length > 0) {
+      params.dormIds.forEach(dormId => queryParams.append('dormIds', dormId));
+    }
+    if (params?.cityId) {
+      queryParams.append('cityId', params.cityId);
+    }
+    const url = `${ENDPOINTS.SETTINGS.GET_MAINTENANCE_MESSAGES}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    return apiRequest<any[]>(url);
+  },
+
   addMaintenanceMessage: async (body: object): Promise<any> => {
     return apiRequest<any>(ENDPOINTS.SETTINGS.ADD_MAINTENANCE_MESSAGE, {
       method: 'POST',

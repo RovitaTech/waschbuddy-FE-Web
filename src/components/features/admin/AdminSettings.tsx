@@ -20,7 +20,11 @@ import {
   Save,
   RefreshCw,
   AlertCircle,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -169,12 +173,48 @@ export function AdminSettings({ location }: AdminSettingsProps) {
     }
   });
 
+  // Local UI state
+  const [settings, setSettings] = useState({
+    system: {
+      maintenanceMode: false,
+      autoApproveUsers: false,
+      maxReservationTime: '60',
+      cleaningInterval: '15',
+      maintenanceNotice: {
+        title: 'Maintenance Notice',
+        message: 'System will be under maintenance from 2 AM to 4 AM today.',
+        startTime: '09:00',
+        endTime: '23:00',
+        startDate: todayDate,
+        endDate: todayDate,
+        cityId: location.city,
+        allDormsInCity: location.dorm === 'all',
+        dormIds: location.dorm === 'all' ? [] : [location.dorm]
+      }
+    },
+    business: {
+      reservationPrice: '2.50',
+      cancellationWindow: '15',
+      maxFutureReservationDays: '0',
+      maxNumberOfQueues: '1',
+      operatingHours: {
+        start: '06:00',
+        end: '23:00'
+      }
+    }
+  });
+
   const [customMessage, setCustomMessage] = useState('');
   const [systemMessageGlobal, setSystemMessageGlobal] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showMaxReservationAlert, setShowMaxReservationAlert] = useState(false);
 
-  // Load cities when maintenance mode is enabled (not on mount)
+  // Maintenance messages viewing state
+  const [maintenanceMessages, setMaintenanceMessages] = useState<any[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [showMaintenanceMessagesPanel, setShowMaintenanceMessagesPanel] = useState(false);
+  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   useEffect(() => {
     const loadCities = async () => {
       try {
@@ -550,6 +590,47 @@ export function AdminSettings({ location }: AdminSettingsProps) {
     handleMaintenanceNoticeChange('dormIds', nextDorms);
   };
 
+  const handleLoadMaintenanceMessages = async () => {
+    try {
+      setIsLoadingMessages(true);
+      const params: any = {};
+      
+      // Get current scope from settings
+      const notice = settings.system.maintenanceNotice;
+      
+      if (notice.allDormsInCity && notice.cityId) {
+        params.cityId = notice.cityId;
+      } else if (notice.dormIds && notice.dormIds.length > 0) {
+        params.dormIds = notice.dormIds;
+      }
+
+      const messages = await settingsService.getMaintenanceMessages(params);
+      setMaintenanceMessages(messages || []);
+      setShowMaintenanceMessagesPanel(true);
+    } catch (error) {
+      console.error('Error loading maintenance messages:', error);
+      toast.error('Failed to load maintenance messages');
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  const handleDeleteMaintenanceMessage = async (messageId: string) => {
+    try {
+      setIsDeletingMessage(true);
+      await settingsService.deleteMaintenanceMessage(messageId);
+      
+      // Refresh the messages list
+      setMaintenanceMessages(maintenanceMessages.filter(m => m.id !== messageId));
+      toast.success('Maintenance message deleted');
+    } catch (error) {
+      console.error('Error deleting maintenance message:', error);
+      toast.error('Failed to delete maintenance message');
+    } finally {
+      setIsDeletingMessage(false);
+    }
+  };
+
   if (!location.cityId) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
@@ -803,12 +884,96 @@ export function AdminSettings({ location }: AdminSettingsProps) {
                   </div>
                 )}
 
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                   <Button onClick={handleSendMaintenanceNotice} className="w-full">
                     Send Maintenance Notice
                   </Button>
+                  <Button 
+                    onClick={handleLoadMaintenanceMessages}
+                    variant="outline"
+                    disabled={isLoadingMessages}
+                    className="w-full"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    {isLoadingMessages ? 'Loading...' : 'View All Maintenance'}
+                  </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {showMaintenanceMessagesPanel && (
+            <div className="rounded-lg border p-4 space-y-3 bg-blue-50/30">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Maintenance Messages</h4>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowMaintenanceMessagesPanel(false)}
+                >
+                  Close
+                </Button>
+              </div>
+
+              {maintenanceMessages.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No maintenance messages found for this scope.</p>
+              ) : (
+                <div className="space-y-2">
+                  {maintenanceMessages.map((message) => (
+                    <div key={message.id} className="border rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedMessageId(expandedMessageId === message.id ? null : message.id)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{message.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {message.startDate} {message.startTime} - {message.endDate} {message.endTime}
+                          </p>
+                        </div>
+                        {expandedMessageId === message.id ? (
+                          <ChevronUp className="h-4 w-4 ml-2" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        )}
+                      </button>
+
+                      {expandedMessageId === message.id && (
+                        <div className="bg-muted/30 p-3 border-t space-y-3">
+                          <div>
+                            <Label className="text-xs font-semibold">Message</Label>
+                            <p className="text-sm mt-1 whitespace-pre-wrap">{message.message}</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <Label className="font-semibold">Start</Label>
+                              <p>{message.startDate} {message.startTime}</p>
+                            </div>
+                            <div>
+                              <Label className="font-semibold">End</Label>
+                              <p>{message.endDate} {message.endTime}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteMaintenanceMessage(message.id)}
+                              disabled={isDeletingMessage}
+                              className="flex-1"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           

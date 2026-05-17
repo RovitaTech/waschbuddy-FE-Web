@@ -89,6 +89,7 @@ export const ENDPOINTS = {
     RESET: '/clients/settings/reset',
     DORM_SPECIFIC: (dormId: string) => `/clients/settings/dorm/${dormId}`,
     ALL_DORMS_LIST: '/clients/settings/dorms/list',
+    GET_MAINTENANCE_MESSAGES: '/clients/settings/maintenance-messages',
     ADD_MAINTENANCE_MESSAGE: '/clients/settings/maintenance-messages',
     // Single-machine maintenance now uses the same collection endpoint as other targets
     // (POST /clients/settings/maintenance-messages) and should send `machineId`.
