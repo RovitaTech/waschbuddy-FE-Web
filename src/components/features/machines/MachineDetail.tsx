@@ -72,32 +72,29 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
       case 'INACTIVE':
       case 'OFFLINE':
         return 'offline';
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => {
-                  // open maintenance form and seed defaults
-                  setMaintenanceForm({
-                    title: `Maintenance for ${machine?.name || 'machine'}`,
-                    message: '',
-                    startDate: new Date().toISOString().split('T')[0],
-                    endDate: new Date().toISOString().split('T')[0],
-                    startTime: '02:00',
-                    endTime: '04:00'
-                  });
-                  setShowMaintenanceForm(true);
-                }}
-              >
-                <Wrench className="h-4 w-4 mr-2" />
-                Schedule Maintenance
-              </Button>
-            </CardContent>
-          </Card>
+      default:
+        return 'available';
+    }
+  };
+
+  const mapApiMachineToUiMachine = (apiMachine: ClientMachineResponse): Machine => {
+    const suffix = typeof apiMachine.machineNumber === 'number' ? `-${String(apiMachine.machineNumber).padStart(3, '0')}` : '';
+
+    return {
+      id: apiMachine.id,
+      name: apiMachine.name ? `${apiMachine.name}${suffix}` : `Machine${suffix || ''}`,
+      type: apiMachine.type === 1 ? 'dryer' : 'washer',
+      status: mapApiStatusToUiStatus(apiMachine.status),
+      location: location.dorm === 'all' ? (apiMachine.dormId ?? location.dorm) : location.dorm,
+      dorm: location.dorm === 'all' ? (apiMachine.dormId ?? 'Unknown dorm') : location.dorm,
+      city: location.city,
+      machineNumber: apiMachine.machineNumber,
+      serialNumber: apiMachine.serialNumber,
+      installationDate: apiMachine.installationDate,
+      clientId: apiMachine.clientId,
+      dormId: apiMachine.dormId,
+      createdAt: apiMachine.createdAt,
+      updatedAt: apiMachine.updatedAt,
       lastMaintenanceDate: apiMachine.lastMaintenanceDate,
       maintenanceScheduled: apiMachine.maintenanceScheduled,
       scheduledWindow: apiMachine.scheduledWindow,
@@ -107,7 +104,7 @@ export function MachineDetail({ machineId, location, onBack, accessType }: Machi
       lastMaintenance: apiMachine.lastMaintenanceDate ?? apiMachine.updatedAt ?? apiMachine.createdAt ?? new Date().toISOString(),
       totalCycles: 0,
       model: apiMachine.model ?? 'Unknown model'
-    };
+    } as Machine;
   };
 
   useEffect(() => {
