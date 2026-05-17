@@ -174,7 +174,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showMaxReservationAlert, setShowMaxReservationAlert] = useState(false);
 
-  // Load cities and dorms on mount
+  // Load cities when maintenance mode is enabled (not on mount)
   useEffect(() => {
     const loadCities = async () => {
       try {
@@ -189,8 +189,14 @@ export function AdminSettings({ location }: AdminSettingsProps) {
       }
     };
 
-    loadCities();
-  }, []);
+    if (settings.system.maintenanceMode) {
+      loadCities();
+    } else {
+      // Clear previously loaded cities/dorms when maintenance is turned off
+      setCities([]);
+      setAllDorms([]);
+    }
+  }, [settings.system.maintenanceMode]);
 
   // Load settings on mount and when location changes
   useEffect(() => {
