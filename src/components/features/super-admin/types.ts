@@ -1,6 +1,6 @@
 export type SuperAdminTab = 'overview' | 'clients' | 'users' | 'countries' | 'cities' | 'dorms';
 
-/** Users tab role filter (client-side; optional server query later). */
+/** Users tab role filter — sent to POST /super-admin/clients/users. */
 export type UserRoleFilter = 'all' | 'admin' | 'resident';
 
 export type JsonRecord = Record<string, unknown>;

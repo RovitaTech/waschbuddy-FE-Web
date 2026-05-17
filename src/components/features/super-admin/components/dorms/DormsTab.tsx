@@ -152,7 +152,7 @@ export function DormsTab({ dashboard, isLoading }: DormsTabProps) {
             <CardHeader>
               <CardTitle>Dorms</CardTitle>
               <CardDescription>
-                Loaded from GET /super-admin/clients/dorms?clientId={dormsClientId}
+                Loaded from POST /super-admin/clients/dorms/list
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">

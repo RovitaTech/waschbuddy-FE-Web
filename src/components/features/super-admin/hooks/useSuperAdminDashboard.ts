@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { getApiErrorMessage, superAdminService } from '@/lib/api';
-import type { City, Country, DormWithLocation } from '@/lib/api/types';
+import type {
+  City,
+  Country,
+  DormWithLocation,
+  PaginationMeta,
+  SuperAdminDormsOverviewTotals,
+  SuperAdminUserRoleFilter,
+} from '@/lib/api/types';
 import {
   EMPTY_CITY_FORM,
   EMPTY_CLIENT_FORM,
@@ -18,15 +25,12 @@ import {
   type UserRecord,
   type UserRoleFilter,
 } from '../types';
-import { fetchDormsForClient } from '../utils/dorms';
-import {
-  matchesUserRoleFilter,
-  normalizeClient,
-  normalizeList,
-  normalizeUser,
-  pickText,
-  resolveApiClientId,
-} from '../utils/normalize';
+import { fetchDormsForClient, fetchDormsOverview } from '../utils/dorms';
+import { normalizeClient, normalizeList, normalizeUser, pickText, resolveApiClientId } from '../utils/normalize';
+
+const USERS_PAGE_SIZE = 20;
+
+const toApiRoleFilter = (filter: UserRoleFilter): SuperAdminUserRoleFilter => filter;
 
 export function useSuperAdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -36,9 +40,14 @@ export function useSuperAdminDashboard() {
   const [usersStats, setUsersStats] = useState<JsonRecord | null>(null);
   const [clients, setClients] = useState<ClientRecord[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [usersMeta, setUsersMeta] = useState<PaginationMeta | null>(null);
+  const [usersPage, setUsersPage] = useState(1);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [usersSearch, setUsersSearch] = useState('');
   const [countries, setCountries] = useState<Country[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [dorms, setDorms] = useState<DormWithLocation[]>([]);
+  const [dormsOverview, setDormsOverview] = useState<SuperAdminDormsOverviewTotals | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('all');
@@ -76,46 +85,61 @@ export function useSuperAdminDashboard() {
     setIsLoadingDorms(false);
   }, []);
 
-  const selectDormsClient = useCallback(
-    (clientId: string) => {
-      setDormsClientId(clientId);
-      setDormForm((current) => ({
-        ...current,
-        clientId,
-        cityId: current.clientId === clientId ? current.cityId : '',
-      }));
-    },
-    [],
-  );
+  const loadUsers = useCallback(async () => {
+    setIsLoadingUsers(true);
+
+    try {
+      const response = await superAdminService.listUsers({
+        page: usersPage,
+        limit: USERS_PAGE_SIZE,
+        role: toApiRoleFilter(userRoleFilter),
+        status: 'all',
+        search: usersSearch.trim() || undefined,
+      });
+
+      setUsers(
+        response.data.map((item, index) => normalizeUser(item as JsonRecord, index)),
+      );
+      setUsersMeta(response.meta);
+    } catch (loadError) {
+      console.error('Failed to load users:', loadError);
+      setUsers([]);
+      setUsersMeta(null);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [userRoleFilter, usersPage, usersSearch]);
+
+  const selectDormsClient = useCallback((clientId: string) => {
+    setDormsClientId(clientId);
+    setDormForm((current) => ({
+      ...current,
+      clientId,
+      cityId: current.clientId === clientId ? current.cityId : '',
+    }));
+  }, []);
 
   const loadData = useCallback(async () => {
     setError(null);
 
     try {
-      const [
-        usersResponse,
-        usersStatsResponse,
-        clientsResponse,
-        countriesResponse,
-        citiesResponse,
-      ] = await Promise.allSettled([
-        superAdminService.getAllUsers(),
-        superAdminService.getUsersStats(),
-        superAdminService.getAllClients(),
-        superAdminService.getCountries(),
-        superAdminService.getCities(),
-      ]);
+      const scopeClientId =
+        selectedClientId !== 'all' ? selectedClientId : undefined;
 
-      const normalizedUsers =
-        usersResponse.status === 'fulfilled'
-          ? normalizeList<JsonRecord>(usersResponse.value).map(normalizeUser)
-          : [];
+      const [usersStatsResponse, clientsResponse, countriesResponse, citiesResponse, dormsOverviewResponse] =
+        await Promise.allSettled([
+          superAdminService.getUsersStats(),
+          superAdminService.getAllClients(),
+          superAdminService.getCountries(),
+          superAdminService.getCities(),
+          fetchDormsOverview(scopeClientId),
+        ]);
+
       const normalizedClients =
         clientsResponse.status === 'fulfilled'
           ? normalizeList<JsonRecord>(clientsResponse.value).map(normalizeClient)
           : [];
 
-      setUsers(normalizedUsers);
       setClients(normalizedClients);
       setUsersStats(
         usersStatsResponse.status === 'fulfilled'
@@ -131,12 +155,24 @@ export function useSuperAdminDashboard() {
         citiesResponse.status === 'fulfilled' ? normalizeList<City>(citiesResponse.value) : [],
       );
 
+      if (dormsOverviewResponse.status === 'fulfilled') {
+        const { overview, dorms: scopedDorms, error: dormsOverviewError } = dormsOverviewResponse.value;
+        if (overview?.overview) {
+          setDormsOverview(overview.overview);
+        }
+        if (dormsOverviewError) {
+          setDormsError(dormsOverviewError);
+        } else if (scopeClientId) {
+          setDorms(scopedDorms);
+        }
+      }
+
       const failedRequests = [
-        { name: 'users', result: usersResponse },
         { name: 'users stats', result: usersStatsResponse },
         { name: 'clients', result: clientsResponse },
         { name: 'countries', result: countriesResponse },
         { name: 'cities', result: citiesResponse },
+        { name: 'dorms overview', result: dormsOverviewResponse },
       ].filter(({ result }) => result.status === 'rejected');
 
       const failureDetails = failedRequests.map(({ name, result }) => {
@@ -160,7 +196,11 @@ export function useSuperAdminDashboard() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [dormsClientId, loadDormsForClient]);
+  }, [dormsClientId, loadDormsForClient, selectedClientId]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   useEffect(() => {
     if (!dormsClientId) return;
@@ -168,12 +208,20 @@ export function useSuperAdminDashboard() {
   }, [dormsClientId, loadDormsForClient]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    const timer = window.setTimeout(() => {
+      void loadUsers();
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [loadUsers]);
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userRoleFilter, usersSearch]);
 
   const refreshData = async () => {
     setIsRefreshing(true);
-    await loadData();
+    await Promise.all([loadData(), loadUsers()]);
   };
 
   const filteredClients = useMemo(() => {
@@ -235,15 +283,12 @@ export function useSuperAdminDashboard() {
   }, [cities, matchesSelectedClient, selectedClientId, users]);
 
   const filteredUsers = useMemo(() => {
-    const query = searchTerm.toLowerCase();
-    return filteredByClient.users.filter(
-      (user) =>
-        matchesUserRoleFilter(user.role, userRoleFilter) &&
-        (user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          user.role.toLowerCase().includes(query)),
-    );
-  }, [filteredByClient.users, searchTerm, userRoleFilter]);
+    if (selectedClientId === 'all') {
+      return users;
+    }
+
+    return filteredByClient.users;
+  }, [filteredByClient.users, selectedClientId, users]);
 
   const filteredCities = useMemo(() => {
     const query = searchTerm.toLowerCase();
@@ -267,6 +312,19 @@ export function useSuperAdminDashboard() {
   }, [dorms, searchTerm]);
 
   const overviewDormCount = useMemo(() => {
+    if (dormsOverview) {
+      if (selectedClientId === 'all') {
+        return dormsOverview.totalDorms;
+      }
+
+      const bundle = clients.find(
+        (entry) =>
+          resolveApiClientId(entry) === selectedClientId || entry.id === selectedClientId,
+      );
+
+      return bundle?.dormCount ?? dorms.length;
+    }
+
     if (selectedClientId === 'all') {
       return clients.reduce((sum, client) => sum + client.dormCount, 0);
     }
@@ -277,12 +335,11 @@ export function useSuperAdminDashboard() {
     );
 
     return client?.dormCount ?? dorms.length;
-  }, [clients, dorms.length, selectedClientId]);
+  }, [clients, dorms.length, dormsOverview, selectedClientId]);
 
   const overviewCounts = {
-    users:
-      (usersStats?.totalUsers as number | undefined) ?? filteredByClient.users.length,
-    clients: selectedClientId === 'all' ? clients.length : scopedClients.length,
+    users: dormsOverview?.totalUsers ?? (usersStats?.totalUsers as number | undefined) ?? usersMeta?.total ?? users.length,
+    clients: selectedClientId === 'all' ? (dormsOverview?.totalClients ?? clients.length) : scopedClients.length,
     countries: countries.length,
     cities: filteredByClient.cities.length,
     dorms: overviewDormCount,
@@ -327,7 +384,7 @@ export function useSuperAdminDashboard() {
       });
       toast.success('Client onboarding email sent.');
       setClientForm(EMPTY_CLIENT_FORM);
-      await loadData();
+      await refreshData();
     } catch (saveError) {
       console.error('Failed to onboard client:', saveError);
       toast.error(getApiErrorMessage(saveError, 'Unable to onboard client right now.'));
@@ -341,7 +398,7 @@ export function useSuperAdminDashboard() {
     try {
       await superAdminService.deleteClient({ clientId });
       toast.success('Client deleted successfully.');
-      await loadData();
+      await refreshData();
     } catch (deleteError) {
       console.error('Failed to delete client:', deleteError);
       toast.error('Unable to delete client right now.');
@@ -365,7 +422,7 @@ export function useSuperAdminDashboard() {
       });
       toast.success('Country added successfully.');
       setCountryForm(EMPTY_COUNTRY_FORM);
-      await loadData();
+      await refreshData();
     } catch (saveError) {
       console.error('Failed to add country:', saveError);
       toast.error('Unable to add country right now.');
@@ -394,7 +451,7 @@ export function useSuperAdminDashboard() {
       });
       toast.success('City added successfully.');
       setCityForm(EMPTY_CITY_FORM);
-      await loadData();
+      await refreshData();
     } catch (saveError) {
       console.error('Failed to add city:', saveError);
       toast.error('Unable to add city right now.');
@@ -408,7 +465,7 @@ export function useSuperAdminDashboard() {
     try {
       await superAdminService.deleteCity(cityId);
       toast.success('City deleted successfully.');
-      await loadData();
+      await refreshData();
     } catch (deleteError) {
       console.error('Failed to delete city:', deleteError);
       toast.error('Unable to delete city right now.');
@@ -440,6 +497,7 @@ export function useSuperAdminDashboard() {
       });
       toast.success('Dorm added successfully.');
       setDormForm({ ...EMPTY_DORM_FORM, clientId });
+      await loadDormsForClient(clientId);
       await loadData();
     } catch (saveError) {
       console.error('Failed to add dorm:', saveError);
@@ -472,8 +530,14 @@ export function useSuperAdminDashboard() {
     error,
     searchTerm,
     setSearchTerm,
+    usersSearch,
+    setUsersSearch,
     userRoleFilter,
     setUserRoleFilter,
+    usersPage,
+    setUsersPage,
+    usersMeta,
+    isLoadingUsers,
     selectedClientId,
     setSelectedClientId,
     refreshData,
