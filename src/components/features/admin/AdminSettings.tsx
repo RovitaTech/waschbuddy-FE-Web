@@ -910,24 +910,47 @@ export function AdminSettings({ location }: AdminSettingsProps) {
                       </button>
 
                       {expandedMessageId === message.id && (
-                        <div className="bg-muted/30 p-3 border-t space-y-3">
+                        <div className="bg-muted/30 p-4 border-t space-y-4">
                           <div>
-                            <Label className="text-xs font-semibold">Message</Label>
-                            <p className="text-sm mt-1 whitespace-pre-wrap">{message.message}</p>
+                            <Label className="text-xs font-semibold text-muted-foreground">Title</Label>
+                            <p className="text-sm font-medium mt-1">{message.title || '-'}</p>
                           </div>
-                          
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                              <Label className="font-semibold">Start</Label>
-                              <p>{message.startDate} {message.startTime}</p>
+
+                          <div>
+                            <Label className="text-xs font-semibold text-muted-foreground">Message</Label>
+                            <p className="text-sm mt-1 whitespace-pre-wrap text-foreground">{message.message}</p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">Start Date</Label>
+                              <p className="text-sm font-medium">{message.startDate || '-'}</p>
                             </div>
-                            <div>
-                              <Label className="font-semibold">End</Label>
-                              <p>{message.endDate} {message.endTime}</p>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">End Date</Label>
+                              <p className="text-sm font-medium">{message.endDate || '-'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">Start Time</Label>
+                              <p className="text-sm font-medium">{message.startTime || '-'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-semibold text-muted-foreground">End Time</Label>
+                              <p className="text-sm font-medium">{message.endTime || '-'}</p>
                             </div>
                           </div>
 
-                          <div className="flex gap-2">
+                          {(message.cityId || message.dormIds?.length > 0) && (
+                            <div className="border-t pt-3 space-y-2">
+                              <Label className="text-xs font-semibold text-muted-foreground">Target Scope</Label>
+                              {message.cityId && <p className="text-sm">City ID: {message.cityId}</p>}
+                              {message.dormIds && message.dormIds.length > 0 && (
+                                <p className="text-sm">Dorms: {message.dormIds.join(', ')}</p>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 pt-2">
                             <Button
                               size="sm"
                               variant="destructive"
