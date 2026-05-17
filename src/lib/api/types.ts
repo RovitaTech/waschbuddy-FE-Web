@@ -83,6 +83,7 @@ export interface City {
   name: string;
   countryId: string;
   clientId: string;
+  timezone?: string;
   country?: Country;
 }
 
@@ -123,6 +124,19 @@ export interface CreateCityRequest {
   name: string;
   countryId: string;
   clientId: string;
+  timezone: string;
+}
+
+export interface DeleteClientRequest {
+  clientId: string;
+}
+
+export interface DeleteDormRequest {
+  dormId: string;
+}
+
+export interface DeleteMultipleDormsRequest {
+  dormIds: string[];
 }
 
 export interface BulkCreateCitiesRequest {
@@ -153,6 +167,64 @@ export interface CreateDormRequest {
   address: string;
   cityId: string;
   clientId: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+}
+
+export interface PaginatedDataResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+
+export type SuperAdminUserRoleFilter = 'all' | 'admin' | 'resident' | 'super_admin';
+export type SuperAdminUserStatusFilter = 'all' | 'active' | 'inactive' | 'pending';
+
+export interface SuperAdminListUsersRequest {
+  page?: number;
+  limit?: number;
+  role?: SuperAdminUserRoleFilter;
+  status?: SuperAdminUserStatusFilter;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface SuperAdminDormsScopeRequest {
+  clientId?: string;
+}
+
+export interface SuperAdminDormsOverviewTotals {
+  totalClients: number;
+  totalDorms: number;
+  totalMachines: number;
+  totalUsers: number;
+}
+
+export interface SuperAdminDormsClientBundle {
+  clientId: string;
+  admin?: Record<string, unknown>;
+  dormCount: number;
+  cityCount: number;
+  machineCount?: number;
+  userCount?: number;
+  dorms: DormWithLocation[];
+}
+
+export interface SuperAdminDormsOverviewResponse {
+  overview: SuperAdminDormsOverviewTotals;
+  clients: SuperAdminDormsClientBundle[];
+}
+
+export interface SuperAdminClientDetailRequest {
+  userPage?: number;
+  userLimit?: number;
 }
 
 export interface ClientDormsRequest {

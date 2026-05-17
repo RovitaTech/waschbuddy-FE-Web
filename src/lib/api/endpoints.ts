@@ -3,7 +3,7 @@
 export const ENDPOINTS = {
   AUTH: {
     SIGNUP: '/auth/signup',
-    // Client admin
+    // Client admin (SUPER_ADMIN createClient also uses ADMIN_SIGNUP for onboarding)
     ADMIN_LOGIN: '/auth/admin/login',
     ADMIN_SIGNUP: '/auth/admin/signup',
     PROFILE: '/auth/profile',
@@ -20,7 +20,7 @@ export const ENDPOINTS = {
     ALL_USERS: '/super-admin/clients/users',
     USERS_STATS: '/super-admin/clients/users/stats',
     ALL_CLIENTS: '/super-admin/clients',
-    CLIENT_BY_ID: (id: string) => `/super-admin/clients/${id}`,
+    CLIENT_BY_ID: (clientId: string) => `/super-admin/clients/${clientId}`,
     DELETE_CLIENT: '/super-admin/clients/client',
     // Countries
     COUNTRIES: '/super-admin/countries',
@@ -28,6 +28,8 @@ export const ENDPOINTS = {
     CITIES: '/super-admin/cities',
     DELETE_CITY: (id: string) => `/super-admin/cities/${id}`,
     // Dorms
+    DORMS_OVERVIEW: '/super-admin/clients/dorms/all',
+    DORMS_LIST: '/super-admin/clients/dorms/list',
     ALL_DORMS: '/super-admin/clients/dorms',
     ADD_DORM: '/super-admin/clients/dorms',
     DELETE_DORM: '/super-admin/clients/dorms',
