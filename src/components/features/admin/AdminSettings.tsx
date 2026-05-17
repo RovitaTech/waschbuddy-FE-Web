@@ -749,7 +749,7 @@ export function AdminSettings({ location }: AdminSettingsProps) {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="">No cities available</SelectItem>
+                        <SelectItem value="__no_cities__" disabled>No cities available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
