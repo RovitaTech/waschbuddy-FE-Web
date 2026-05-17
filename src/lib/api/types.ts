@@ -83,6 +83,7 @@ export interface City {
   name: string;
   countryId: string;
   clientId: string;
+  timezone?: string;
   country?: Country;
 }
 
@@ -123,6 +124,19 @@ export interface CreateCityRequest {
   name: string;
   countryId: string;
   clientId: string;
+  timezone: string;
+}
+
+export interface DeleteClientRequest {
+  clientId: string;
+}
+
+export interface DeleteDormRequest {
+  dormId: string;
+}
+
+export interface DeleteMultipleDormsRequest {
+  dormIds: string[];
 }
 
 export interface BulkCreateCitiesRequest {

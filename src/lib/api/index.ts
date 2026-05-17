@@ -31,3 +31,4 @@ export * from './types';
 export * from './endpoints';
 export * from './services';
 export * from './apiController';
+export * from './errors';

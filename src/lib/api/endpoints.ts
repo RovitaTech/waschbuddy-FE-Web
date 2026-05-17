@@ -3,7 +3,7 @@
 export const ENDPOINTS = {
   AUTH: {
     SIGNUP: '/auth/signup',
-    // Client admin
+    // Client admin (SUPER_ADMIN createClient also uses ADMIN_SIGNUP for onboarding)
     ADMIN_LOGIN: '/auth/admin/login',
     ADMIN_SIGNUP: '/auth/admin/signup',
     PROFILE: '/auth/profile',
@@ -27,7 +27,8 @@ export const ENDPOINTS = {
     // Cities
     CITIES: '/super-admin/cities',
     DELETE_CITY: (id: string) => `/super-admin/cities/${id}`,
-    // Dorms
+    // Dorms (per-client: ?clientId=CLIENT_xxx). Wire ALL_DORMS_ALL when backend ships list-all.
+    ALL_DORMS_ALL: '/super-admin/clients/dorms/all',
     ALL_DORMS: '/super-admin/clients/dorms',
     ADD_DORM: '/super-admin/clients/dorms',
     DELETE_DORM: '/super-admin/clients/dorms',

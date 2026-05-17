@@ -3,19 +3,10 @@ import type { ApiRequestOptions } from './types';
 import { apiFetch } from './index';
 import { ENDPOINTS } from './endpoints';
 import { clearAuthToken, getAuthToken, getRefreshToken, setAuthToken, setRefreshToken } from './authToken';
+import { ApiHttpError, getApiErrorMessage } from './errors';
 
+export { ApiHttpError } from './errors';
 export const API_BASE_URL = getApiBaseUrl();
-
-export class ApiHttpError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public responseBody?: unknown,
-  ) {
-    super(message);
-    this.name = 'ApiHttpError';
-  }
-}
 
 const toLoggableHeaders = (headers: Headers): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -176,10 +167,10 @@ export async function apiRequest<T>(
   console.groupEnd();
 
   if (!response.ok) {
-    const message =
-      (isJson && (responseBody as { message?: string } | null)?.message) ||
-      response.statusText ||
-      'API request failed';
+    const message = getApiErrorMessage(
+      new ApiHttpError('API request failed', response.status, responseBody),
+      response.statusText || 'API request failed',
+    );
 
     console.groupCollapsed(`[api:error] ${method} ${endpoint} (${response.status})`);
     console.warn('message:', message);

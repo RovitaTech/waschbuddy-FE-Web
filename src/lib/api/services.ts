@@ -26,6 +26,9 @@ import {
   Country,
   CreateCountryRequest,
   CreateDormRequest,
+  DeleteClientRequest,
+  DeleteDormRequest,
+  DeleteMultipleDormsRequest,
   LoginRequest,
   LoginResponse,
   MachineListFilters,
@@ -158,7 +161,8 @@ export const authService = {
 // Super Admin Services
 export const superAdminService = {
   getAllUsers: async (): Promise<any[]> => {
-    return apiRequest<any[]>(ENDPOINTS.SUPER_ADMIN.ALL_USERS);
+    const response = await apiRequest<unknown>(ENDPOINTS.SUPER_ADMIN.ALL_USERS);
+    return extractList(response, ['users']);
   },
 
   getUsersStats: async (filters?: { cityId?: string; dormUUID?: string } & Record<string, string | undefined>): Promise<any> => {
@@ -181,13 +185,14 @@ export const superAdminService = {
   },
 
   getAllClients: async (): Promise<any[]> => {
-    return apiRequest<any[]>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS);
+    const response = await apiRequest<unknown>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS);
+    return extractList(response, ['clients']);
   },
 
   createClient: async (body: CreateClientRequest): Promise<any> => {
-    return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.ALL_CLIENTS, {
+    return apiRequest<any>(ENDPOINTS.AUTH.ADMIN_SIGNUP, {
       method: 'POST',
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
   },
 
@@ -195,7 +200,7 @@ export const superAdminService = {
     return apiRequest<any>(ENDPOINTS.SUPER_ADMIN.CLIENT_BY_ID(id));
   },
 
-  deleteClient: async (body: object): Promise<void> => {
+  deleteClient: async (body: DeleteClientRequest): Promise<void> => {
     return apiRequest<void>(ENDPOINTS.SUPER_ADMIN.DELETE_CLIENT, {
       method: 'DELETE',
       body: JSON.stringify(body)
@@ -203,9 +208,8 @@ export const superAdminService = {
   },
 
   getCountries: async (): Promise<Country[]> => {
-    return apiRequest<Country[]>(ENDPOINTS.SUPER_ADMIN.COUNTRIES, {
-      skipAuth: true,
-    });
+    const response = await apiRequest<unknown>(ENDPOINTS.SUPER_ADMIN.COUNTRIES);
+    return extractList<Country>(response, ['countries']);
   },
 
   addCountry: async (body: CreateCountryRequest): Promise<Country> => {
@@ -221,7 +225,8 @@ export const superAdminService = {
       clientId: filters?.clientId
     });
 
-    return apiRequest<City[]>(`${ENDPOINTS.SUPER_ADMIN.CITIES}${queryString}`);
+    const response = await apiRequest<unknown>(`${ENDPOINTS.SUPER_ADMIN.CITIES}${queryString}`);
+    return extractList<City>(response, ['cities']);
   },
 
   addCities: async (body: BulkCreateCitiesRequest): Promise<BulkCreateCitiesResponse> => {
@@ -237,10 +242,11 @@ export const superAdminService = {
     });
   },
 
-  getDorms: async (filters?: { clientId?: string }): Promise<DormWithLocation[]> => {
-    const queryString = buildQueryString({ clientId: filters?.clientId });
+  getDorms: async (filters: { clientId: string }): Promise<DormWithLocation[]> => {
+    const queryString = buildQueryString({ clientId: filters.clientId });
 
-    return apiRequest<DormWithLocation[]>(`${ENDPOINTS.SUPER_ADMIN.ALL_DORMS}${queryString}`);
+    const response = await apiRequest<unknown>(`${ENDPOINTS.SUPER_ADMIN.ALL_DORMS}${queryString}`);
+    return extractList<DormWithLocation>(response, ['dorms']);
   },
 
   addDorm: async (body: CreateDormRequest): Promise<DormWithLocation> => {
@@ -250,14 +256,14 @@ export const superAdminService = {
     });
   },
 
-  deleteDorm: async (body: object): Promise<void> => {
+  deleteDorm: async (body: DeleteDormRequest): Promise<void> => {
     return apiRequest<void>(ENDPOINTS.SUPER_ADMIN.DELETE_DORM, {
       method: 'DELETE',
       body: JSON.stringify(body)
     });
   },
 
-  deleteMultipleDorms: async (body: object): Promise<void> => {
+  deleteMultipleDorms: async (body: DeleteMultipleDormsRequest): Promise<void> => {
     return apiRequest<void>(ENDPOINTS.SUPER_ADMIN.DELETE_MULTIPLE_DORMS, {
       method: 'DELETE',
       body: JSON.stringify(body)
