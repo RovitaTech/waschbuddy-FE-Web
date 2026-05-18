@@ -229,6 +229,12 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
               </form>
             </>
           )}
+
+          <p className="text-center text-xs text-slate-500">
+            <a href="/privacy-policy" className="underline-offset-4 hover:underline">
+              Privacy Policy
+            </a>
+          </p>
         </div>
       </div>
 
